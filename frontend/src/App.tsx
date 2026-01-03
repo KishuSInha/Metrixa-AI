@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Cpu, MousePointer2, ShieldCheck, ArrowRight, Laptop, Layers, Activity } from 'lucide-react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:10000';
+import { Download, Cpu, MousePointer2, ShieldCheck, ArrowRight, Laptop, Layers } from 'lucide-react';
 
 const Logo = ({ className = "" }) => (
   <svg
