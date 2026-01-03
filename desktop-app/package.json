@@ -20,8 +20,6 @@
   "dependencies": {
     "dotenv": "^16.6.1",
     "electron-store": "^8.2.0",
-    "install": "^0.13.0",
-    "openai": "^4.68.0",
     "screenshot-desktop": "^1.15.0"
   },
   "devDependencies": {

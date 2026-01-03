@@ -2,13 +2,13 @@ const { app, BrowserWindow, ipcMain, desktopCapturer, nativeImage } = require('e
 app.setName('Metrixa AI');
 const path = require('path');
 const Store = require('electron-store');
-const OpenAI = require('openai');
+const https = require('https');
+const http = require('http');
 require('dotenv').config();
 
 const store = new Store();
 let mainWindow;
 let monitoringInterval = null;
-let openaiClient = null;
 
 function stopMonitoring() {
     if (monitoringInterval) {
@@ -16,17 +16,6 @@ function stopMonitoring() {
         monitoringInterval = null;
         console.log('Monitoring stopped.');
     }
-}
-
-// Initialize OpenAI from env or store
-function initOpenAI() {
-    const apiKey = store.get('apiKey') || process.env.OPENAI_API_KEY;
-    if (apiKey && apiKey !== 'your_openai_api_key_here') {
-        openaiClient = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
-        console.log('✓ OpenAI initialized');
-        return true;
-    }
-    return false;
 }
 
 function createWindow() {
@@ -85,7 +74,6 @@ ipcMain.on('complete-setup', () => {
     setTimeout(() => {
         if (mainWindow) {
             mainWindow.loadFile('main-app.html');
-            initOpenAI();
         }
     }, 500);
 });
@@ -100,7 +88,6 @@ ipcMain.on('get-settings', (event) => {
 ipcMain.on('save-settings', (event, settings) => {
     if (settings.apiKey) store.set('apiKey', settings.apiKey);
     if (settings.autoStart !== undefined) store.set('autoStart', settings.autoStart);
-    initOpenAI();
     event.sender.send('settings-saved');
 });
 
@@ -123,17 +110,148 @@ ipcMain.on('manual-analysis', () => {
     captureAndAnalyze();
 });
 
-// Capture and Analyze Logic
+// AI Service - Multi-tier approach
+async function analyzeWithOllama(base64Image) {
+    return new Promise((resolve, reject) => {
+        const data = JSON.stringify({
+            model: "llava",
+            prompt: "Analyze this screen and provide 2 short, actionable productivity tips. Format exactly like this:\nTITLE: [Title]\nDESCRIPTION: [One sentence description]\nCATEGORY: [Category]",
+            images: [base64Image],
+            stream: false
+        });
+
+        const options = {
+            hostname: 'localhost',
+            port: 11434,
+            path: '/api/generate',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': data.length
+            },
+            timeout: 30000
+        };
+
+        const req = http.request(options, (res) => {
+            let responseData = '';
+
+            res.on('data', (chunk) => {
+                responseData += chunk;
+            });
+
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(responseData);
+                    if (parsed.response) {
+                        console.log('✓ Ollama analysis complete');
+                        resolve(parsed.response);
+                    } else {
+                        reject(new Error('No response from Ollama'));
+                    }
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        });
+
+        req.on('error', (err) => {
+            reject(err);
+        });
+
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Ollama request timeout'));
+        });
+
+        req.write(data);
+        req.end();
+    });
+}
+
+async function analyzeWithHuggingFace(base64Image) {
+    const apiKey = store.get('huggingfaceApiKey') || process.env.HUGGINGFACE_API_KEY;
+    if (!apiKey) throw new Error('No Hugging Face API key');
+
+    return new Promise((resolve, reject) => {
+        const data = JSON.stringify({
+            inputs: base64Image
+        });
+
+        const options = {
+            hostname: 'api-inference.huggingface.co',
+            path: '/models/Salesforce/blip-image-captioning-large',
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'Content-Length': data.length
+            },
+            timeout: 30000
+        };
+
+        const req = https.request(options, (res) => {
+            let responseData = '';
+
+            res.on('data', (chunk) => {
+                responseData += chunk;
+            });
+
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(responseData);
+                    if (parsed[0] && parsed[0].generated_text) {
+                        const caption = parsed[0].generated_text;
+                        const formatted = `
+TITLE: Screen Analysis
+DESCRIPTION: ${caption}
+CATEGORY: AI Analysis
+                        `;
+                        console.log('✓ Hugging Face analysis complete');
+                        resolve(formatted);
+                    } else {
+                        reject(new Error('Invalid response from Hugging Face'));
+                    }
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        });
+
+        req.on('error', (err) => {
+            reject(err);
+        });
+
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Hugging Face request timeout'));
+        });
+
+        req.write(data);
+        req.end();
+    });
+}
+
+function getMockAnalysis() {
+    return `
+TITLE: Organize Your Workspace
+DESCRIPTION: Using virtual desktops (Mission Control) can help separate work contexts.
+CATEGORY: Productivity
+
+TITLE: Keyboard Shortcuts
+DESCRIPTION: Learn Cmd+Tab for quick app switching to boost efficiency.
+CATEGORY: Workflow
+    `;
+}
+
+// Main Capture and Analyze Logic with Smart Fallbacks
 async function captureAndAnalyze() {
     if (!mainWindow) return;
 
-    // Send immediate feedback
     mainWindow.webContents.send('analysis-result', 'Analyzing screen...');
 
     try {
         console.log('Capturing screen...');
 
-        // Use native Electron desktopCapturer
         const sources = await desktopCapturer.getSources({
             types: ['screen'],
             thumbnailSize: { width: 1280, height: 720 }
@@ -144,76 +262,38 @@ async function captureAndAnalyze() {
         const base64Image = sources[0].thumbnail.toPNG().toString('base64');
         console.log('Screen captured successfully.');
 
-        if (!openaiClient) {
-            const initialized = initOpenAI();
-            if (!initialized) {
-                // Fallback Mock Response
-                console.log('No API Key - Using Mock Analysis');
-                await new Promise(r => setTimeout(r, 1500));
-
-                const mockResponse = `
-TITLE: Organize Your Desktop
-DESCRIPTION: Grouping scattered files into folders will reduce visual clutter.
-CATEGORY: Organization
-
-TITLE: Quick Launch
-DESCRIPTION: Try Cmd+Space (Spotlight) to open apps instantly without searching.
-CATEGORY: Productivity
-                 `;
-
-                mainWindow.webContents.send('analysis-result', mockResponse);
-                return;
-            }
+        // Try Ollama first (local, unlimited)
+        try {
+            console.log('Trying Ollama local AI...');
+            const result = await analyzeWithOllama(base64Image);
+            mainWindow.webContents.send('analysis-result', result);
+            return;
+        } catch (ollamaError) {
+            console.log('Ollama unavailable:', ollamaError.message);
         }
 
-        console.log('Sending to OpenAI...');
-        const response = await openaiClient.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                {
-                    role: "user",
-                    content: [
-                        {
-                            type: "text",
-                            text: `Analyze this screen. Provide 2 short, actionable productivity tips. 
-                            Format exactly like this:
-                            TITLE: [Title]
-                            DESCRIPTION: [One sentence description]
-                            CATEGORY: [Category]`
-                        },
-                        { type: "image_url", image_url: { url: `data:image/png;base64,${base64Image}` } }
-                    ]
-                }
-            ],
-            max_tokens: 300
-        });
+        // Fallback to Hugging Face
+        try {
+            console.log('Trying Hugging Face API...');
+            const result = await analyzeWithHuggingFace(base64Image);
+            mainWindow.webContents.send('analysis-result', result);
+            return;
+        } catch (hfError) {
+            console.log('Hugging Face unavailable:', hfError.message);
+        }
 
-        const suggestions = response.choices[0].message.content;
-        console.log('Analysis result received');
-
-        mainWindow.webContents.send('analysis-result', suggestions);
+        // Final fallback to mock
+        console.log('Using mock analysis (no AI available)');
+        const mockResult = getMockAnalysis();
+        mainWindow.webContents.send('analysis-result', mockResult);
 
     } catch (error) {
         console.error('Analysis failed:', error);
-
-        // Fallback for Quota Exceeded (429) or other API errors
-        if (error.status === 429 || error.code === 'insufficient_quota') {
-            console.log('Quota exceeded. Switching to Mock Analysis.');
-
-            const mockResponse = `
-TITLE: Maximize Screen Real Estate
-DESCRIPTION: Window management apps like Rectangle can help you snap windows faster.
-CATEGORY: Workflow
-
-TITLE: Quota Exceeded (Demo Mode)
-DESCRIPTION: Your OpenAI API key has reached its limit. This is a simulated response.
-CATEGORY: System
-            `;
-
-            mainWindow.webContents.send('analysis-result', mockResponse);
-        } else {
-            mainWindow.webContents.send('analysis-result', `TITLE: Analysis Failed\nDESCRIPTION: ${error.message}\nCATEGORY: Error`);
-        }
+        mainWindow.webContents.send('analysis-result', `
+TITLE: Analysis Error
+DESCRIPTION: ${error.message}
+CATEGORY: Error
+        `);
     }
 }
 
@@ -234,7 +314,10 @@ app.whenReady().then(() => {
     }
 
     createWindow();
-    initOpenAI();
+    console.log('✓ Metrixa AI ready - Multi-tier AI service active');
+    console.log('  Primary: Ollama (local)');
+    console.log('  Fallback 1: Hugging Face API');
+    console.log('  Fallback 2: Mock analysis');
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
