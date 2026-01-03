@@ -43,20 +43,18 @@
             background: #F5F5F3;
         }
 
-        .ghost-icon {
+        .logo-icon {
             width: 80px;
             height: 80px;
-            background: white;
-            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
 
-        .ghost-face {
-            font-size: 40px;
+        .logo-icon svg {
+            width: 100%;
+            height: 100%;
         }
 
         h1 {
@@ -245,18 +243,13 @@
     <div class="container">
         <!-- Left Panel -->
         <div class="left-panel">
-            <div class="ghost-icon">
-                <div class="ghost-face">
-                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                        <circle cx="12" cy="16" r="2.5" fill="#1A1A1A" />
-                        <circle cx="28" cy="16" r="2.5" fill="#1A1A1A" />
-                        <path d="M12 26 Q20 30 28 26" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"
-                            fill="none" />
-                    </svg>
-                </div>
+            <div class="logo-icon">
+                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 32V8L20 20L32 8V32" stroke="#1A1A1A" stroke-width="3.5" stroke-linecap="square" />
+                </svg>
             </div>
 
-            <h1>Hi, I'm Ghost!</h1>
+            <h1>Hi, I'm Metrixa AI!</h1>
             <p class="subtitle">
                 I'm your AI assistant. I can handle lots of tasks for you across your applications. Let me free up your
                 time.
@@ -296,7 +289,7 @@
         // Launch main app
         launchBtn.addEventListener('click', async () => {
             console.log('🚀 Launching app');
-            
+
             if (!window.api) {
                 console.error('❌ window.api not available');
                 alert('Connection error. Please restart.');
