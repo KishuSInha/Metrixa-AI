@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <title>MetrixaAI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: #161616;
+            border-right: 1px solid #2a2a2a;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #888;
+        }
+
+        .nav-item:hover {
+            background: #1f1f1f;
+            color: #fff;
+        }
+
+        .nav-item.active {
+            background: #2563eb;
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 16px;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: #161616;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #2a2a2a;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .control-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.active {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .status-badge.inactive {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #2a2a2a;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #3a3a3a;
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Results Area */
+        .results-area {
+            background: #161616;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #2a2a2a;
+            min-height: 300px;
+        }
+
+        .results-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .suggestion-card {
+            background: #1f1f1f;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 4px solid #2563eb;
+            animation: slideIn 0.3s ease;
+        }
+
+        .suggestion-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .suggestion-desc {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .suggestion-category {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            gap: 12px;
+            color: #888;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #2a2a2a;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo-section">
+                <svg class="logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 32V8L20 20L32 8V32" stroke="white" stroke-width="3.5" stroke-linecap="square" />
+                </svg>
+                <span class="logo-text">MetrixaAI</span>
+            </div>
+
+            <div class="nav-item active">
+                <span>🖥️</span>
+                <span>Screen Analysis</span>
+            </div>
+            <div class="nav-item" id="settings-btn">
+                <span>⚙️</span>
+                <span>Settings</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <h1>Screen Analysis</h1>
+                <p class="subtitle">Real-time visual context awareness</p>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <div class="control-header">
+                    <h3 class="control-title">Monitoring Controls</h3>
+                    <div class="status-badge" id="status-badge">
+                        <span class="status-dot"></span>
+                        <span id="status-text">Inactive</span>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" id="start-btn">
+                        ▶️ Start Monitoring
+                    </button>
+                    <button class="btn btn-danger" id="stop-btn" disabled>
+                        ⏹️ Stop Monitoring
+                    </button>
+                    <button class="btn btn-secondary" id="manual-btn">
+                        🔍 Analyze Now
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Area -->
+            <div class="results-area">
+                <h3 class="results-header">AI Suggestions</h3>
+                <div id="results-content">
+                    <div class="empty-state">
+                        <div class="empty-icon">🤖</div>
+                        <p>No analysis yet. Click "Analyze Now" or start monitoring.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('✓ Main app loaded successfully');
+
+        let isMonitoring = false;
+
+        // Check if API is available
+        if (!window.api) {
+            console.error('❌ window.api not available');
+            alert('Communication error. Please restart the app.');
+        }
+
+        // UI Elements
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const manualBtn = document.getElementById('manual-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+        const statusBadge = document.getElementById('status-badge');
+        const statusText = document.getElementById('status-text');
+        const resultsContent = document.getElementById('results-content');
+
+        // Settings Handler
+        settingsBtn.addEventListener('click', async () => {
+            const apiKey = prompt('Enter your valid OpenAI API Key to fix "Quota Exceeded":');
+            if (apiKey && apiKey.trim().startsWith('sk-')) {
+                window.api.send('save-settings', { apiKey: apiKey.trim() });
+                alert('✅ API Key Saved! Try analyzing again.');
+            } else if (apiKey) {
+                alert('⚠️ Invalid API Key format. It should start with "sk-".');
+            }
+        });
+
+        // Start Monitoring
+        startBtn.addEventListener('click', () => {
+            console.log('🚀 Start monitoring clicked');
+            isMonitoring = true;
+
+            window.api.send('start-monitoring');
+
+            // Update UI
+            statusBadge.classList.remove('inactive');
+            statusBadge.classList.add('active');
+            statusText.textContent = 'Active';
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+
+            showLoading();
+        });
+
+        // Stop Monitoring
+        stopBtn.addEventListener('click', () => {
+            console.log('⏹️ Stop monitoring clicked');
+            isMonitoring = false;
+
+            window.api.send('stop-monitoring');
+
+            // Update UI
+            statusBadge.classList.remove('active');
+            statusBadge.classList.add('inactive');
+            statusText.textContent = 'Inactive';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        });
+
+        // Manual Analysis
+        manualBtn.addEventListener('click', () => {
+            console.log('🔍 Manual analysis clicked');
+            window.api.send('manual-analysis');
+            showLoading();
+        });
+
+        // Listen for analysis results
+        if (window.api.on) {
+            window.api.on('analysis-result', (data) => {
+                console.log('📊 Analysis result received:', data);
+                displayResults(data);
+            });
+        }
+
+        function showLoading() {
+            resultsContent.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>Analyzing your screen...</span>
+                </div>
+            `;
+        }
+
+        function displayResults(data) {
+            console.log('Displaying results:', data);
+
+            if (!data || data.includes('Error') || data.includes('Failed')) {
+                resultsContent.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <p>${data || 'Analysis failed. Please try again.'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Parse the suggestions
+            const suggestions = parseSuggestions(data);
+
+            if (suggestions.length === 0) {
+                resultsContent.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🤔</div>
+                        <p>No suggestions found. Try again.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Display suggestions as cards
+            resultsContent.innerHTML = suggestions.map(s => `
+                <div class="suggestion-card">
+                    <div class="suggestion-title">${s.title}</div>
+                    <div class="suggestion-desc">${s.description}</div>
+                    <span class="suggestion-category">${s.category}</span>
+                </div>
+            `).join('');
+        }
+
+        function parseSuggestions(text) {
+            const suggestions = [];
+            const lines = text.split('\n').filter(l => l.trim());
+
+            let current = {};
+
+            for (const line of lines) {
+                if (line.startsWith('TITLE:')) {
+                    if (current.title) suggestions.push(current);
+                    current = { title: line.replace('TITLE:', '').trim() };
+                } else if (line.startsWith('DESCRIPTION:')) {
+                    current.description = line.replace('DESCRIPTION:', '').trim();
+                } else if (line.startsWith('CATEGORY:')) {
+                    current.category = line.replace('CATEGORY:', '').trim();
+                }
+            }
+
+            if (current.title) suggestions.push(current);
+
+            return suggestions;
+        }
+
+        // Initialize status
+        statusBadge.classList.add('inactive');
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <title>Welcome to MetrixaAI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg: #F1EFEE;
+            --text: #1B1B19;
+            --card-bg: #FFFFFF;
+            --accent: #000000;
+            --toggle-on: #34C759;
+            --toggle-off: #E9E9EA;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            -webkit-app-region: drag;
+            user-select: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            padding: 40px;
+            align-items: center;
+        }
+
+        .left-col {
+            padding-right: 20px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            letter-spacing: -0.02em;
+        }
+
+        p.subtitle {
+            color: #666;
+            font-size: 15px;
+            margin: 0 0 32px 0;
+            line-height: 1.5;
+        }
+
+        .permission-item {
+            margin-bottom: 24px;
+        }
+
+        .perm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .perm-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .perm-desc {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.4;
+            max-width: 90%;
+        }
+
+        .toggle {
+            appearance: none;
+            width: 44px;
+            height: 24px;
+            background: var(--toggle-off);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            outline: none;
+            transition: background 0.3s;
+            -webkit-app-region: no-drag;
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .toggle:checked {
+            background: var(--toggle-on);
+        }
+
+        .toggle:checked::after {
+            transform: translateX(20px);
+        }
+
+        button.continue-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.1s;
+            -webkit-app-region: no-drag;
+        }
+
+        button.continue-btn:hover:not(:disabled) {
+            transform: scale(1.02);
+        }
+
+        button.continue-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .right-col {
+            position: relative;
+            height: 500px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .right-col img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .success-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+            -webkit-app-region: no-drag;
+        }
+
+        .success-card {
+            background: white;
+            padding: 48px;
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            transform: scale(0.9);
+            animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            position: relative;
+            z-index: 10000;
+            -webkit-app-region: no-drag;
+        }
+
+        .checkmark {
+            width: 64px;
+            height: 64px;
+            background: #22C55E;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px auto;
+            color: white;
+        }
+
+        .success-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #000;
+        }
+
+        .success-desc {
+            color: #666;
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        button.launch-btn {
+            background: #1B1B19;
+            color: white;
+            border: none;
+            padding: 16px 48px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            -webkit-app-region: no-drag;
+            pointer-events: auto;
+            position: relative;
+            z-index: 10001;
+        }
+
+        button.launch-btn:hover {
+            transform: scale(1.05);
+            background: #000;
+        }
+
+        button.launch-btn:active {
+            transform: scale(0.98);
+        }
+
+        button.launch-btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
+            pointer-events: none;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 13px;
+            margin-top: 12px;
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.9);
+            }
+
+            to {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="success-view" id="success-view" onclick="handleOverlayClick(event)">
+        <div class="success-card" onclick="event.stopPropagation()">
+            <div class="checkmark">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <h2 class="success-title">You're all set!</h2>
+            <p class="success-desc">Authentication successful.<br>MetrixaAI is ready to help.</p>
+            <button class="launch-btn" id="launch-btn" onclick="launchApp(); event.stopPropagation();">
+                Open Metrixa
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+            </button>
+            <div class="error-message" id="error-message"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="left-col">
+            <svg class="logo" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 32V8L20 20L32 8V32" stroke="black" stroke-width="3.5" stroke-linecap="square" />
+            </svg>
+
+            <h1>Let's get you set up.</h1>
+            <p class="subtitle">First, I need some permissions to get started. No sign-up required.</p>
+
+            <div class="permission-item">
+                <div class="perm-header">
+                    <span class="perm-title">Screen Access</span>
+                    <input type="checkbox" class="toggle" id="perm-screen" onchange="checkPermissions()">
+                </div>
+                <div class="perm-desc">So I can see your screen to help you complete tasks. No video is recorded.</div>
+            </div>
+
+            <div class="permission-item">
+                <div class="perm-header">
+                    <span class="perm-title">File Access</span>
+                    <input type="checkbox" class="toggle" id="perm-file" onchange="checkPermissions()">
+                </div>
+                <div class="perm-desc">So I can manage your files and folders when you ask.</div>
+            </div>
+
+            <div class="permission-item">
+                <div class="perm-header">
+                    <span class="perm-title">Location Access</span>
+                    <input type="checkbox" class="toggle" id="perm-loc" onchange="checkPermissions()">
+                </div>
+                <div class="perm-desc">So I can give location-aware recommendations.</div>
+            </div>
+
+            <button id="continue-btn" class="continue-btn" onclick="finishSetup()" disabled>Continue</button>
+        </div>
+
+        <div class="right-col">
+            <img src="logo.svg" alt="Metrixa Art"
+                style="width: 100%; height: 100%; object-fit: contain; padding: 40px; background: white;">
+        </div>
+    </div>
+
+    <script>
+        console.log('🚀 Onboarding script loaded');
+
+        // Check if window.api is available
+        if (!window.api) {
+            console.error('❌ CRITICAL: window.api not found. Preload script may not be loaded correctly.');
+            alert('Setup Error: System communication not available. Please restart the app.');
+        } else {
+            console.log('✓ window.api is available');
+        }
+
+        function checkPermissions() {
+            const screen = document.getElementById('perm-screen').checked;
+            const file = document.getElementById('perm-file').checked;
+            const loc = document.getElementById('perm-loc').checked;
+
+            const btn = document.getElementById('continue-btn');
+            btn.disabled = !(screen && file && loc);
+
+            console.log('Permissions:', { screen, file, loc, enabled: !btn.disabled });
+        }
+
+        function finishSetup() {
+            console.log('✓ Finish setup clicked');
+            const view = document.getElementById('success-view');
+            if (view) {
+                view.style.display = 'flex';
+            }
+        }
+
+        async function launchApp() {
+            console.log('🚀 Launch App clicked');
+
+            const btn = document.getElementById('launch-btn');
+            const errorMsg = document.getElementById('error-message');
+
+            // Reset error message
+            errorMsg.style.display = 'none';
+            errorMsg.textContent = '';
+
+            // Disable button and show loading state
+            btn.disabled = true;
+            btn.innerHTML = 'Launching...';
+
+            // Check if API is available
+            if (!window.api) {
+                console.error('❌ window.api not available');
+                showError('Connection lost. Please restart the app.');
+                btn.disabled = false;
+                btn.innerHTML = 'Retry';
+                return;
+            }
+
+            try {
+                console.log('📤 Sending complete-setup message...');
+
+                // Method 1: Fire and forget (simple send)
+                window.api.send('complete-setup');
+                console.log('✓ Message sent successfully');
+
+                // Optional: Use invoke for confirmation (async method)
+                // Uncomment if you want to wait for confirmation from main process
+                /*
+                const result = await window.api.invoke('complete-setup-async');
+                console.log('✓ Setup complete response:', result);
+                
+                if (!result.success) {
+                    throw new Error(result.message || 'Unknown error');
+                }
+                */
+
+                // Give a small delay to show the launching state
+                setTimeout(() => {
+                    console.log('✓ Launch sequence complete');
+                }, 500);
+
+            } catch (error) {
+                console.error('❌ Launch Error:', error);
+                showError(error.message || 'Failed to launch. Please try again.');
+                btn.disabled = false;
+                btn.innerHTML = `
+                    Open Metrixa
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                `;
+            }
+        }
+
+        function showError(message) {
+            const errorMsg = document.getElementById('error-message');
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+        }
+
+        function handleOverlayClick(event) {
+            // Prevent closing modal when clicking on overlay
+            // Only the button should work
+            console.log('Overlay clicked');
+        }
+
+        // Add direct event listener as backup
+        document.addEventListener('DOMContentLoaded', () => {
+            const launchBtn = document.getElementById('launch-btn');
+            if (launchBtn) {
+                launchBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Button clicked via event listener');
+                    launchApp();
+                });
+                console.log('✓ Event listener attached to launch button');
+            }
+        });
+
+        // Listen for any messages from main process (optional)
+        if (window.api && window.api.on) {
+            window.api.on('loading-progress', (data) => {
+                console.log('Loading progress:', data);
+            });
+        }
+    </script>
+</body>
+
+</html>
