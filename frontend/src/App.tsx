@@ -88,8 +88,10 @@ const MetrixaAILanding = () => {
               </p>
 
               <div className="flex flex-col gap-6 items-start md:items-end">
-                {/* Download link points to /Metrixa-AI.dmg in public folder */}
-                <a href="/Metrixa-AI.dmg" download className="flex items-center gap-6 group">
+                {/* Download hosted on GitHub Releases (Vercel can't serve 95MB files) */}
+                <a href="https://github.com/KishuSInha/Metrixa-AI/releases/download/v0.1.0/Metrixa.AI-0.1.0-arm64.dmg"
+                  download
+                  className="flex items-center gap-6 group">
                   <span className="text-xs font-black uppercase tracking-widest border-b-2 border-black pb-1">Download for macOS</span>
                   <div className="w-12 h-12 rounded-full border border-black flex items-center justify-center group-hover:bg-black group-hover:text-white transition-all">
                     <Download size={18} />
