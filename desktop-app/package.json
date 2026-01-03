@@ -1,7 +1,9 @@
 {
   "name": "metrixa-ai",
   "version": "0.1.0",
+  "productName": "Metrixa AI",
   "description": "AI-powered screen analysis assistant for macOS",
+  "homepage": "https://metrixaai.site",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

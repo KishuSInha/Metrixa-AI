@@ -31,10 +31,9 @@
             grid-template-columns: 1fr 1fr;
             width: 100%;
             height: 100vh;
-            gap: 0;
         }
 
-        /* Left Panel - Welcome */
+        /* Left Panel */
         .left-panel {
             padding: 60px;
             display: flex;
@@ -73,6 +72,34 @@
             max-width: 400px;
         }
 
+        .status-box {
+            background: white;
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            margin-bottom: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .status-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .status-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #1A1A1A;
+        }
+
         .button {
             background: #C4F582;
             color: #1A1A1A;
@@ -88,16 +115,17 @@
             width: fit-content;
         }
 
-        .button:hover {
+        .button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(196, 245, 130, 0.4);
         }
 
-        .button:active {
-            transform: translateY(0);
+        .button:disabled {
+            background: #E5E5E5;
+            color: #999;
+            cursor: not-allowed;
         }
 
-        /* Right Panel - Visual */
         .right-panel {
             position: relative;
             overflow: hidden;
@@ -123,125 +151,49 @@
             height: 100%;
             object-fit: cover;
             border-radius: 28px;
+            opacity: 0.9;
         }
 
-        .task-bubble {
+        .progress-overlay {
             position: absolute;
-            bottom: 60px;
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
             background: white;
-            padding: 24px 32px;
-            border-radius: 20px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            max-width: 400px;
-            font-size: 15px;
-            color: #1A1A1A;
-            line-height: 1.5;
+            padding: 20px 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 80%;
         }
 
-        .page-indicator {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        /* Success Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            -webkit-app-region: no-drag;
-        }
-
-        .modal-overlay.active {
+        .progress-text {
             display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 24px;
-            padding: 48px;
-            text-align: center;
-            max-width: 420px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
-            -webkit-app-region: no-drag;
-        }
-
-        .success-checkmark {
-            width: 72px;
-            height: 72px;
-            background: #22C55E;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-            color: white;
-            font-size: 36px;
-        }
-
-        .modal-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            color: #1A1A1A;
-        }
-
-        .modal-desc {
-            color: #666;
-            margin-bottom: 32px;
-            line-height: 1.5;
-        }
-
-        .modal-button {
-            background: #1A1A1A;
-            color: white;
-            border: none;
-            padding: 16px 48px;
-            border-radius: 28px;
-            font-size: 16px;
+            justify-content: space-between;
+            font-size: 12px;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            -webkit-app-region: no-drag;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
         }
 
-        .modal-button:hover {
-            transform: scale(1.05);
-            background: #000;
+        .progress-bar {
+            height: 6px;
+            background: #F0F0F0;
+            border-radius: 3px;
+            overflow: hidden;
         }
 
-        .modal-button:active {
-            transform: scale(0.98);
+        .progress-fill {
+            height: 100%;
+            background: #C4F582;
+            width: 0%;
+            transition: width 0.3s ease;
         }
     </style>
 </head>
 
 <body>
-    <!-- Success Modal -->
-    <div class="modal-overlay" id="successModal">
-        <div class="modal-content">
-            <div class="success-checkmark">✓</div>
-            <h2 class="modal-title">You're all set!</h2>
-            <p class="modal-desc">Authentication successful.<br>Metrixa AI is ready to help.</p>
-            <button class="modal-button" id="launchBtn">Open Metrixa</button>
-        </div>
-    </div>
-
     <div class="container">
-        <!-- Left Panel -->
         <div class="left-panel">
             <div class="logo-icon">
                 <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -251,69 +203,113 @@
 
             <h1>Hi, I'm Metrixa AI!</h1>
             <p class="subtitle">
-                I'm your AI assistant. I can handle lots of tasks for you across your applications. Let me free up your
-                time.
+                I'm your local-first AI assistant. I process everything on your machine for maximum privacy and zero
+                latency.
             </p>
-            <button class="button" id="startBtn">Sounds Good!</button>
+
+            <div class="status-box">
+                <div class="status-line">
+                    <span class="status-label">Local Engine:</span>
+                    <span class="status-value" id="ollamaStatus">Checking...</span>
+                </div>
+                <div class="status-line">
+                    <span class="status-label">Inference Model:</span>
+                    <span class="status-value" id="modelStatus">Pending...</span>
+                </div>
+            </div>
+
+            <button class="button" id="mainBtn" disabled>Checking System...</button>
         </div>
 
-        <!-- Right Panel -->
         <div class="right-panel">
             <div class="visual-card">
                 <img src="assets/bg1.png" alt="Background" class="bg-image">
-                <div class="task-bubble">
-                    Put together prep notes for each of my meetings tomorrow.
+
+                <div class="progress-overlay" id="bootProgress" style="display: none;">
+                    <div class="progress-text">
+                        <span id="stepText">Initializing...</span>
+                        <span id="percentText">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
                 </div>
-                <div class="page-indicator">1/9</div>
             </div>
         </div>
     </div>
 
     <script>
-        console.log('🚀 Onboarding loaded');
+        const ipc = window.api;
+        const mainBtn = document.getElementById('mainBtn');
+        const ollamaStatusText = document.getElementById('ollamaStatus');
+        const modelStatusText = document.getElementById('modelStatus');
+        const bootProgress = document.getElementById('bootProgress');
+        const progressFill = document.getElementById('progressFill');
+        const stepText = document.getElementById('stepText');
+        const percentText = document.getElementById('percentText');
 
-        const startBtn = document.getElementById('startBtn');
-        const successModal = document.getElementById('successModal');
-        const launchBtn = document.getElementById('launchBtn');
+        let systemState = 'startup';
 
-        // Show permissions setup (we'll transition to it)
-        startBtn.addEventListener('click', () => {
-            console.log('✓ Getting started');
-            // For now, jump directly to success
-            // In production, you'd show permission screens here
-            setTimeout(() => {
-                successModal.classList.add('active');
-            }, 300);
-        });
-
-        // Launch main app
-        launchBtn.addEventListener('click', async () => {
-            console.log('🚀 Launching app');
-
-            if (!window.api) {
-                console.error('❌ window.api not available');
-                alert('Connection error. Please restart.');
-                return;
-            }
-
-            try {
-                launchBtn.textContent = 'Launching...';
-                launchBtn.disabled = true;
-                window.api.send('complete-setup');
-                console.log('✓ Launch signal sent');
-            } catch (error) {
-                console.error('❌ Launch error:', error);
-                launchBtn.textContent = 'Open Metrixa';
-                launchBtn.disabled = false;
-            }
-        });
-
-        // Check API availability
-        if (!window.api) {
-            console.error('❌ window.api not found');
-        } else {
-            console.log('✓ window.api available');
+        function init() {
+            ipc.send('check-ollama');
         }
+
+        ipc.on('ollama-status', (data) => {
+            if (data.status === 'missing') {
+                ollamaStatusText.textContent = 'Missing';
+                ollamaStatusText.style.color = '#ef4444';
+                mainBtn.disabled = false;
+                mainBtn.textContent = 'Install AI Engine';
+                systemState = 'install_required';
+            }
+            else if (data.status === 'ready') {
+                ollamaStatusText.textContent = 'Installed';
+                ollamaStatusText.style.color = '#22c55e';
+
+                if (data.modelExists) {
+                    modelStatusText.textContent = 'LLaVA Loaded';
+                    modelStatusText.style.color = '#22c55e';
+                    mainBtn.disabled = false;
+                    mainBtn.textContent = 'Get Started';
+                    systemState = 'ready';
+                } else {
+                    modelStatusText.textContent = 'Not Found';
+                    modelStatusText.style.color = '#f59e0b';
+                    mainBtn.disabled = false;
+                    mainBtn.textContent = 'Download Vision Model';
+                    systemState = 'pull_required';
+                }
+            }
+            else if (data.status === 'installed') {
+                init();
+            }
+        });
+
+        ipc.on('download-progress', (data) => {
+            bootProgress.style.display = 'block';
+            stepText.textContent = data.step;
+            const match = data.detail.match(/(\d+)%/);
+            if (match) {
+                progressFill.style.width = match[1] + '%';
+                percentText.textContent = match[1] + '%';
+            }
+        });
+
+        mainBtn.addEventListener('click', () => {
+            if (systemState === 'install_required') {
+                ipc.send('install-ollama');
+                mainBtn.disabled = true;
+                mainBtn.textContent = 'Installing...';
+            } else if (systemState === 'pull_required') {
+                ipc.send('pull-model');
+                mainBtn.disabled = true;
+                mainBtn.textContent = 'Downloading...';
+            } else if (systemState === 'ready') {
+                ipc.send('complete-setup');
+            }
+        });
+
+        init();
     </script>
 </body>
 

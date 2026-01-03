@@ -9,7 +9,10 @@ contextBridge.exposeInMainWorld('api', {
             'save-settings',
             'start-monitoring',
             'stop-monitoring',
-            'manual-analysis'
+            'manual-analysis',
+            'check-ollama',
+            'install-ollama',
+            'pull-model'
         ];
         if (validChannels.includes(channel)) {
             ipcRenderer.send(channel, data);
@@ -17,7 +20,7 @@ contextBridge.exposeInMainWorld('api', {
     },
     // Invoke for async response
     invoke: (channel, data) => {
-        const validChannels = ['complete-setup-async', 'analyze-screen-logic'];
+        const validChannels = ['complete-setup-async', 'analyze-screen-logic', 'is-ollama-installed'];
         if (validChannels.includes(channel)) {
             return ipcRenderer.invoke(channel, data);
         }
@@ -28,8 +31,10 @@ contextBridge.exposeInMainWorld('api', {
             'command-result',
             'settings-loaded',
             'screen-captured',
-            'analysis-result', // If we move analysis to main
-            'loading-progress'
+            'analysis-result',
+            'loading-progress',
+            'ollama-status',
+            'download-progress'
         ];
         if (validChannels.includes(channel)) {
             ipcRenderer.on(channel, (event, ...args) => func(...args));

@@ -1,0 +1,8 @@
+<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path
+    d="M8 32V8L20 20L32 8V32"
+    stroke="black"
+    stroke-width="3.5"
+    stroke-linecap="square"
+  />
+</svg>

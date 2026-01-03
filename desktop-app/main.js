@@ -1,5 +1,10 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, nativeImage } = require('electron');
-app.setName('Metrixa AI');
+const { app, BrowserWindow, ipcMain, desktopCapturer, nativeImage, Menu } = require('electron');
+
+// Force app name as early as possible
+app.name = 'Metrixa AI';
+if (app.setName) app.setName('Metrixa AI');
+process.title = 'Metrixa AI';
+
 const path = require('path');
 const Store = require('electron-store');
 const https = require('https');
@@ -19,7 +24,7 @@ function stopMonitoring() {
 }
 
 function createWindow() {
-    const iconPath = path.join(__dirname, 'assets/icon.png');
+    const iconPath = path.join(__dirname, 'assets', 'icon.png');
     let windowIcon = null;
 
     try {
@@ -43,9 +48,11 @@ function createWindow() {
         },
         titleBarStyle: 'hidden',
         frame: true,
-        backgroundColor: '#F1EFEE',
+        backgroundColor: '#F5F5F3',
         ...(windowIcon && { icon: windowIcon })
     });
+
+    mainWindow.setTitle("Metrixa AI");
 
     if (process.platform === 'darwin' && windowIcon) {
         try {
@@ -105,17 +112,102 @@ ipcMain.on('stop-monitoring', () => {
     stopMonitoring();
 });
 
-ipcMain.on('manual-analysis', () => {
-    console.log('Manual analysis requested...');
-    captureAndAnalyze();
+const { exec, spawn } = require('child_process');
+
+// Helper to check if Ollama is installed
+async function isOllamaInstalled() {
+    return new Promise((resolve) => {
+        exec('ollama --version', (error) => {
+            resolve(!error);
+        });
+    });
+}
+
+// Helper to check if model exists
+async function doesModelExist(modelName) {
+    return new Promise((resolve) => {
+        exec(`ollama list`, (error, stdout) => {
+            if (error) return resolve(false);
+            resolve(stdout.includes(modelName));
+        });
+    });
+}
+
+ipcMain.handle('is-ollama-installed', async () => {
+    return await isOllamaInstalled();
+});
+
+ipcMain.on('check-ollama', async (event) => {
+    const installed = await isOllamaInstalled();
+    if (!installed) {
+        event.sender.send('ollama-status', { status: 'missing', message: 'Ollama not found' });
+        return;
+    }
+
+    const modelExists = await doesModelExist('llava');
+    event.sender.send('ollama-status', {
+        status: 'ready',
+        modelExists,
+        message: modelExists ? 'System ready' : 'Model download required'
+    });
+});
+
+ipcMain.on('install-ollama', (event) => {
+    console.log('Initiating Ollama installation...');
+    // On macOS, we can point them to the download or attempt a brew install if possible
+    // For a smoother "app" experience, we'll open the browser to the download page 
+    // but in a real "auto-install" we might use a direct download and exec.
+    // Let's implement a "Sovereign" auto-installer:
+    const installCmd = '/bin/bash -c "$(curl -fsSL https://ollama.com/install.sh)"';
+
+    const child = spawn('/bin/bash', ['-c', 'curl -fsSL https://ollama.com/install.sh | sh']);
+
+    child.stdout.on('data', (data) => {
+        event.sender.send('download-progress', { step: 'installing', detail: data.toString() });
+    });
+
+    child.on('close', async (code) => {
+        const success = code === 0 || await isOllamaInstalled();
+        event.sender.send('ollama-status', {
+            status: success ? 'installed' : 'failed',
+            message: success ? 'Installation successful' : 'Installation failed'
+        });
+    });
+});
+
+ipcMain.on('pull-model', (event) => {
+    console.log('Pulling LLaVA model...');
+    const child = spawn('ollama', ['pull', 'llava']);
+
+    child.stdout.on('data', (data) => {
+        const output = data.toString();
+        // Ollama pull output usually contains percentages
+        event.sender.send('download-progress', { step: 'pulling', detail: output });
+    });
+
+    child.on('close', (code) => {
+        event.sender.send('ollama-status', {
+            status: code === 0 ? 'ready' : 'failed',
+            message: code === 0 ? 'Model ready' : 'Pull failed'
+        });
+    });
+});
+
+ipcMain.on('manual-analysis', (event, data) => {
+    const query = data && data.query ? data.query : null;
+    console.log(`Manual analysis requested with query: ${query}`);
+    captureAndAnalyze(query);
 });
 
 // AI Service - Multi-tier approach
-async function analyzeWithOllama(base64Image) {
+async function analyzeWithOllama(base64Image, query = null) {
     return new Promise((resolve, reject) => {
+        const defaultPrompt = "Analyze this screen and provide 2 short, actionable productivity tips. Format exactly like this:\nTITLE: [Title]\nDESCRIPTION: [One sentence description]\nCATEGORY: [Category]";
+        const prompt = query ? `User Query: ${query}\n\nPlease analyze the screen in context of this query and provide a helpful response. If the query is a general question, answer it based on the screen content.` : defaultPrompt;
+
         const data = JSON.stringify({
             model: "llava",
-            prompt: "Analyze this screen and provide 2 short, actionable productivity tips. Format exactly like this:\nTITLE: [Title]\nDESCRIPTION: [One sentence description]\nCATEGORY: [Category]",
+            prompt: prompt,
             images: [base64Image],
             stream: false
         });
@@ -168,7 +260,7 @@ async function analyzeWithOllama(base64Image) {
     });
 }
 
-async function analyzeWithHuggingFace(base64Image) {
+async function analyzeWithHuggingFace(base64Image, query = null) {
     const apiKey = store.get('huggingfaceApiKey') || process.env.HUGGINGFACE_API_KEY;
     if (!apiKey) throw new Error('No Hugging Face API key');
 
@@ -244,10 +336,10 @@ CATEGORY: Workflow
 }
 
 // Main Capture and Analyze Logic with Smart Fallbacks
-async function captureAndAnalyze() {
+async function captureAndAnalyze(query = null) {
     if (!mainWindow) return;
 
-    mainWindow.webContents.send('analysis-result', 'Analyzing screen...');
+    mainWindow.webContents.send('analysis-result', query ? 'Thinking...' : 'Analyzing screen...');
 
     try {
         console.log('Capturing screen...');
@@ -265,7 +357,7 @@ async function captureAndAnalyze() {
         // Try Ollama first (local, unlimited)
         try {
             console.log('Trying Ollama local AI...');
-            const result = await analyzeWithOllama(base64Image);
+            const result = await analyzeWithOllama(base64Image, query);
             mainWindow.webContents.send('analysis-result', result);
             return;
         } catch (ollamaError) {
@@ -275,7 +367,7 @@ async function captureAndAnalyze() {
         // Fallback to Hugging Face
         try {
             console.log('Trying Hugging Face API...');
-            const result = await analyzeWithHuggingFace(base64Image);
+            const result = await analyzeWithHuggingFace(base64Image, query);
             mainWindow.webContents.send('analysis-result', result);
             return;
         } catch (hfError) {
@@ -298,23 +390,99 @@ CATEGORY: Error
 }
 
 app.whenReady().then(() => {
+    // Setup About Panel for macOS
+    if (app.setAboutPanelOptions) {
+        app.setAboutPanelOptions({
+            applicationName: 'Metrixa AI',
+            applicationVersion: '0.1.0',
+            copyright: '© 2026 Metrixa AI',
+            credits: 'The Metrixa AI Team',
+            authors: ['Metrixa AI'],
+            website: 'https://metrixaai.site',
+            iconPath: path.join(__dirname, 'assets', 'icon.png')
+        });
+    }
+
+    // Setup Menu for macOS name consistency
+    const template = [
+        ...(process.platform === 'darwin' ? [{
+            label: 'Metrixa AI',
+            submenu: [
+                { role: 'about' },
+                { type: 'separator' },
+                { role: 'services' },
+                { type: 'separator' },
+                { role: 'hide' },
+                { role: 'hideOthers' },
+                { role: 'unhide' },
+                { type: 'separator' },
+                { role: 'quit' }
+            ]
+        }] : []),
+        {
+            label: 'Edit',
+            submenu: [
+                { role: 'undo' },
+                { role: 'redo' },
+                { type: 'separator' },
+                { role: 'cut' },
+                { role: 'copy' },
+                { role: 'paste' },
+                { role: 'selectAll' }
+            ]
+        },
+        {
+            label: 'View',
+            submenu: [
+                { role: 'reload' },
+                { role: 'forceReload' },
+                { role: 'toggleDevTools' },
+                { type: 'separator' },
+                { role: 'resetZoom' },
+                { role: 'zoomIn' },
+                { role: 'zoomOut' },
+                { type: 'separator' },
+                { role: 'togglefullscreen' }
+            ]
+        },
+        {
+            label: 'Window',
+            submenu: [
+                { role: 'minimize' },
+                { role: 'zoom' },
+                { type: 'separator' },
+                { role: 'front' },
+                { type: 'separator' },
+                { role: 'window' }
+            ]
+        }
+    ];
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
+
     if (process.platform === 'darwin') {
-        setTimeout(() => {
-            const iconPath = path.join(__dirname, 'assets/icon.icns');
+        const setDockIcon = (attempts = 0) => {
+            const iconPath = path.join(__dirname, 'assets', 'icon.png');
             try {
                 const dockIcon = nativeImage.createFromPath(iconPath);
                 if (!dockIcon.isEmpty()) {
                     app.dock.setIcon(dockIcon);
-                    console.log('✓ Dock icon updated to native icns');
+                    console.log('✓ Dock icon updated successfully');
+                } else if (attempts < 5) {
+                    console.log(`Dock icon empty, retrying... (${attempts + 1}/5)`);
+                    setTimeout(() => setDockIcon(attempts + 1), 500);
                 }
             } catch (err) {
                 console.error('Failed to set dock icon:', err);
+                if (attempts < 5) setTimeout(() => setDockIcon(attempts + 1), 500);
             }
-        }, 100);
+        };
+        setDockIcon();
     }
 
     createWindow();
-    console.log('✓ Metrixa AI ready - Multi-tier AI service active');
+    console.log(`✓ Metrixa AI ready - App Name: ${app.name}`);
+    console.log(`  Icon Path: ${path.join(__dirname, 'assets', 'icon.png')}`);
     console.log('  Primary: Ollama (local)');
     console.log('  Fallback 1: Hugging Face API');
     console.log('  Fallback 2: Mock analysis');
