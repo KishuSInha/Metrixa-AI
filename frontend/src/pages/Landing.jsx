@@ -53,7 +53,7 @@ const Landing = () => {
                         to="/documentation"
                         className="group flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
                     >
-                        <span>View Documentation</span>
+                        <span>Deep Dive</span>
                         <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                     </Link>
                 </div>
