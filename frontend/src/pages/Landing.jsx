@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Shield, ArrowRight, Zap, Cpu, Terminal } from 'lucide-react';
+import { Download, Shield, ArrowRight, Zap, Cpu, Terminal, AppWindow, Code, MessageSquare, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Logo = ({ className = "" }) => (
@@ -43,20 +43,19 @@ const Landing = () => {
                             <span className="text-xl font-bold tracking-tight text-slate-900 uppercase">Metrixa AI</span>
                         </Link>
                         <div className="hidden md:flex items-center gap-10 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                            <a href="#orchestration" className="hover:text-slate-900 transition-colors">Orchestration</a>
-                            <a href="#how-it-works" className="hover:text-slate-900 transition-colors">Workflow</a>
-                            <a href="#sovereignty" className="hover:text-slate-900 transition-colors">Sovereignty</a>
+                            <a href="#engine" className="hover:text-slate-900 transition-colors">Engine</a>
+                            <a href="#capabilities" className="hover:text-slate-900 transition-colors">Capabilities</a>
+                            <a href="#sovereign-node" className="hover:text-slate-900 transition-colors">Sovereign Node</a>
                         </div>
                     </div>
 
-                    <a
-                        href={downloadUrl}
-                        download
+                    <Link
+                        to="/documentation"
                         className="group flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
                     >
-                        <span>Initialize</span>
+                        <span>View Documentation</span>
                         <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                    </a>
+                    </Link>
                 </div>
             </nav>
 
@@ -85,87 +84,36 @@ const Landing = () => {
                         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
                     >
 
-                        <h1 className="text-6xl md:text-[7.5rem] font-bold text-white mb-8 leading-[0.85] tracking-tighter">
-                            Bridging Human Intent <br />
-                            <span className="text-white/40 italic font-light">& Native Execution.</span>
+
+                        <h1 className="text-6xl md:text-[7rem] font-bold text-white mb-8 leading-[0.9] tracking-tighter">
+                            Put AI to work across every Mac app.
                         </h1>
 
-                        <p className="text-xl md:text-2xl text-white/60 mb-12 font-medium max-w-2xl leading-relaxed">
-                            The first sovereign agentic layer that orchestrates native applications through on-device computer vision and zero-latency accessibility drivers.
+                        <p className="mx-auto text-center text-xl md:text-2xl text-white/60 mb-12 font-light max-w-3xl leading-relaxed">
+                              Metrixa uses local vision to control your native software. No APIs, no plugins—just instant, sovereign automation across your entire workspace.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row items-center gap-6">
+                        <div className="flex flex-col items-center gap-4">
                             <a
                                 href={downloadUrl}
                                 download
-                                className="w-full sm:w-auto inline-flex items-center justify-center gap-4 bg-[#C4F582] text-slate-900 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-[#B4E572] transition-all hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(196,245,130,0.3)]"
+                                className="inline-flex flex-col items-center justify-center gap-1 bg-[#C4F582] text-slate-900 px-10 py-4 rounded-2xl font-bold text-lg hover:bg-[#B4E572] transition-all hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(196,245,130,0.3)] min-w-[280px]"
                             >
-                                <Download className="w-5 h-5" />
-                                Deploy for macOS
-                            </a>
-
-                            <div className="hidden lg:flex items-center gap-4 px-8 border-l border-white/10">
-                                <div className="flex flex-col">
-                                    <span className="text-[9px] font-bold uppercase tracking-widest text-white/30">Target Arch</span>
-                                    <span className="text-xs font-mono text-white/70">arm64-darwin-23.0</span>
+                                <div className="flex items-center gap-2">
+                                    <Download className="w-5 h-5" />
+                                    <span>Download for macOS</span>
                                 </div>
-                            </div>
+                                <span className="text-[10px] font-mono opacity-60 uppercase tracking-widest">arm64-apple-darwin</span>
+                            </a>
                         </div>
                     </motion.div>
                 </div>
 
-                {/* Action Core Visualization */}
-                <div className="absolute bottom-20 right-20 hidden xl:flex items-center justify-center w-64 h-64">
-                    {/* Rotating Energy Field */}
-                    <motion.div
-                        className="absolute inset-0"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-                    >
-                        {/* Ambient Glows */}
-                        <div className="absolute inset-0 bg-[#C4F582]/5 blur-3xl rounded-full scale-150"></div>
 
-                        {/* Outer Ring */}
-                        <div className="absolute inset-0 border border-white/5 rounded-full border-dashed"></div>
-
-                        {/* Middle Octagon */}
-                        <div className="absolute inset-8 border border-white/10 rounded-[2rem] rotate-45"></div>
-
-                        {/* Orbital Nodes */}
-                        {[0, 90, 180, 270].map((angle, i) => (
-                            <div
-                                key={i}
-                                className="absolute w-2 h-2 bg-white/40 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"
-                                style={{
-                                    top: `${50 + 48 * Math.sin(angle * Math.PI / 180)}%`,
-                                    left: `${50 + 48 * Math.cos(angle * Math.PI / 180)}%`,
-                                }}
-                            ></div>
-                        ))}
-                    </motion.div>
-
-                    {/* Static Core Logo (Pulsing) */}
-                    <motion.div
-                        className="relative z-10 w-24 h-24 bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 flex items-center justify-center shadow-2xl"
-                        animate={{
-                            scale: [1, 1.05, 1],
-                            borderColor: ["rgba(255,255,255,0.1)", "rgba(196,245,130,0.3)", "rgba(255,255,255,0.1)"]
-                        }}
-                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                        <Logo className="w-10 h-10 text-[#C4F582] drop-shadow-[0_0_15px_rgba(196,245,130,0.5)]" />
-
-                        {/* Inner corner accents */}
-                        <div className="absolute top-2 left-2 w-1.5 h-1.5 border-t border-l border-white/20"></div>
-                        <div className="absolute top-2 right-2 w-1.5 h-1.5 border-t border-r border-white/20"></div>
-                        <div className="absolute bottom-2 left-2 w-1.5 h-1.5 border-b border-l border-white/20"></div>
-                        <div className="absolute bottom-2 right-2 w-1.5 h-1.5 border-b border-r border-white/20"></div>
-                    </motion.div>
-                </div>
             </section>
 
-            {/* Sovereignty Section */}
-            <section id="sovereignty" className="py-32 px-6 md:px-12 bg-[#F6F6F4]">
+            {/* Sovereign Node Section */}
+            <section id="sovereign-node" className="py-32 px-6 md:px-12 bg-[#F6F6F4]">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid lg:grid-cols-2 gap-20 items-end mb-24">
                         <div>
@@ -211,8 +159,8 @@ const Landing = () => {
                 </div>
             </section>
 
-            {/* Orchestration Section */}
-            <section id="orchestration" className="py-32 px-6 md:px-12 bg-white">
+            {/* Engine Section (formerly Orchestration) */}
+            <section id="engine" className="py-32 px-6 md:px-12 bg-white">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col lg:flex-row gap-20 items-center">
                         <div className="flex-1 order-2 lg:order-1">
