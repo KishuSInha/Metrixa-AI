@@ -1,8 +1,0 @@
-fastapi
-uvicorn[standard]
-gunicorn
-pydantic
-openai
-python-dotenv
-pyautogui
-keyboard
