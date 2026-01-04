@@ -27,7 +27,7 @@ const MetrixaAILanding = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const downloadUrl = "https://github.com/KishuSInha/Metrixa-AI/releases/download/v0.1.0/Metrixa.AI-0.1.0-arm64.dmg";
+  const downloadUrl = "https://github.com/KishuSInha/Metrixa-AI/releases/download/v0.1.1/Metrixa.AI-0.1.1-arm64.dmg";
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased overflow-x-hidden">
