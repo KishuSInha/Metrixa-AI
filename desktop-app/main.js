@@ -1,4 +1,11 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, nativeImage, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, nativeImage, Menu, screen } = require('electron');
+const { exec, spawn } = require('child_process');
+const { getScreenText, readScreenText } = require('./src/context/screen');
+const { guiClick, guiType, guiMove } = require('./src/actions/gui');
+const { pasteIntoNotes } = require('./src/actions/pasteToNotes');
+const { generatePlan } = require('./src/agents/planner');
+const AgentRunner = require('./src/orchestrator/runner');
+const { globalShortcut } = require('electron');
 
 // Force app name as early as possible
 app.name = 'Metrixa AI';
@@ -14,6 +21,8 @@ require('dotenv').config();
 const store = new Store();
 let mainWindow;
 let monitoringInterval = null;
+let agentRunner = null;
+
 
 function stopMonitoring() {
     if (monitoringInterval) {
@@ -67,12 +76,58 @@ function createWindow() {
 
     mainWindow.on('closed', () => {
         mainWindow = null;
+        agentRunner = null;
         try {
             stopMonitoring();
         } catch (err) {
             console.error('Error during stopMonitoring on close:', err);
         }
     });
+
+    agentRunner = new AgentRunner(mainWindow);
+
+    // Register Global Task Shortcuts
+    globalShortcut.register('Command+Shift+M', () => {
+        console.log('⌘+Shift+M: Triggering Notes Mission');
+        runNotesMission();
+    });
+
+    globalShortcut.register('Command+Shift+X', () => {
+        console.log('🛑 ⌘+Shift+X: Global Kill Switch triggered');
+        if (agentRunner) agentRunner.isExecuting = false;
+        if (mainWindow) mainWindow.webContents.send('analysis-result', '⚠️ MISSION CANCELLED BY USER.');
+    });
+
+    globalShortcut.register('Command+Shift+E', () => {
+        console.log('⌘+Shift+E: Triggering Gmail Mission');
+        runGmailMission();
+    });
+}
+
+async function runNotesMission() {
+    if (!mainWindow) return;
+    try {
+        mainWindow.webContents.send('analysis-result', '📸 Reading screen for summary...');
+        const text = await readScreenText();
+
+        if (!text.trim()) {
+            mainWindow.webContents.send('analysis-result', '❌ No text detected on screen.');
+            return;
+        }
+
+        mainWindow.webContents.send('analysis-result', '🧠 Summarizing content mission-style...');
+        // We'll use the existing AnalyzeWithOllama for simplicity or a specialized summarize agent
+        // For MVP, let's use a quick summarize prompt
+        const summary = await analyzeWithOllama(null, `Summarize this text concisely for my Notes app:\n\n${text}`);
+
+        mainWindow.webContents.send('analysis-result', '📝 Writing to Apple Notes...');
+        await pasteIntoNotes(summary);
+
+        mainWindow.webContents.send('analysis-result', '✅ Mission Complete! Summary pasted into Notes.');
+    } catch (err) {
+        console.error('Notes Mission failed:', err);
+        mainWindow.webContents.send('analysis-result', `❌ Mission Failed: ${err.message}`);
+    }
 }
 
 // IPC Handlers
@@ -112,24 +167,46 @@ ipcMain.on('stop-monitoring', () => {
     stopMonitoring();
 });
 
-const { exec, spawn } = require('child_process');
 
 // Helper to check if Ollama is installed
-async function isOllamaInstalled() {
+// Helper to check Ollama via HTTP (whitelisting 127.0.0.1)
+function isOllamaInstalled() {
     return new Promise((resolve) => {
-        exec('ollama --version', (error) => {
-            resolve(!error);
+        const req = http.get({
+            hostname: '127.0.0.1',
+            port: 11434,
+            path: '/'
+        }, (res) => {
+            resolve(res.statusCode === 200 || res.statusCode === 404);
         });
+
+        req.on('error', () => resolve(false));
     });
 }
 
-// Helper to check if model exists
-async function doesModelExist(modelName) {
+function doesModelExist(modelName) {
     return new Promise((resolve) => {
-        exec(`ollama list`, (error, stdout) => {
-            if (error) return resolve(false);
-            resolve(stdout.includes(modelName));
+        const req = http.request({
+            hostname: '127.0.0.1',
+            port: 11434,
+            path: '/api/tags',
+            method: 'GET'
+        }, (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                try {
+                    const models = JSON.parse(data).models || [];
+                    const exists = models.some(m => m.name.includes(modelName));
+                    resolve(exists);
+                } catch (e) {
+                    resolve(false);
+                }
+            });
         });
+
+        req.on('error', () => resolve(false));
+        req.end();
     });
 }
 
@@ -175,6 +252,30 @@ ipcMain.on('install-ollama', (event) => {
     });
 });
 
+// OCR and GUI Interaction Handlers
+ipcMain.handle('get-screen-text', async () => {
+    try {
+        return await getScreenText(mainWindow);
+    } catch (err) {
+        console.error('OCR IPC failed:', err);
+        return { error: err.message };
+    }
+});
+
+ipcMain.on('gui-click', (event, { x, y }) => {
+    console.log(`Clicking at: ${x}, ${y}`);
+    guiClick(x, y);
+});
+
+ipcMain.on('gui-type', (event, { text }) => {
+    console.log(`Typing: ${text}`);
+    guiType(text);
+});
+
+ipcMain.on('gui-move', (event, { x, y }) => {
+    guiMove(x, y);
+});
+
 ipcMain.on('pull-model', (event) => {
     console.log('Pulling LLaVA model...');
     const child = spawn('ollama', ['pull', 'llava']);
@@ -193,17 +294,71 @@ ipcMain.on('pull-model', (event) => {
     });
 });
 
-ipcMain.on('manual-analysis', (event, data) => {
+ipcMain.on('manual-analysis', async (event, data) => {
     const query = data && data.query ? data.query : null;
-    console.log(`Manual analysis requested with query: ${query}`);
-    captureAndAnalyze(query);
+    if (!query) return;
+
+    console.log(`Mission requested: ${query}`);
+
+    // If it's a "mission-like" request, we use the Orchestrator with Approval
+    const missionKeywords = ['summarize', 'put', 'into', 'sync', 'open', 'send', 'mission', 'task', 'read'];
+    const isMission = missionKeywords.some(k => query.toLowerCase().includes(k));
+
+    if (isMission) {
+        try {
+            mainWindow.webContents.send('analysis-result', 'Strategic planning initiated...');
+            const screenData = await getScreenText(mainWindow);
+
+            const plan = await generatePlan(query, screenData.text);
+            console.log("Generated Plan:", JSON.stringify(plan, null, 2));
+
+            // SECURITY: Send plan to UI for USER APPROVAL instead of direct execution
+            mainWindow.webContents.send('plan-received', plan);
+        } catch (error) {
+            console.error("Mission failed:", error);
+            mainWindow.webContents.send('analysis-result', `MISSION ERROR: ${error.message}`);
+        }
+    } else {
+        // Fallback to standard single-shot analysis
+        captureAndAnalyze(query);
+    }
+});
+
+ipcMain.on('approve-plan', async (event, plan) => {
+    if (!agentRunner) {
+        agentRunner = new AgentRunner(mainWindow);
+    }
+    console.log("Mission Approved. Executing...");
+    await agentRunner.runPlan(plan);
 });
 
 // AI Service - Multi-tier approach
 async function analyzeWithOllama(base64Image, query = null) {
     return new Promise((resolve, reject) => {
-        const defaultPrompt = "Analyze this screen and provide 2 short, actionable productivity tips. Format exactly like this:\nTITLE: [Title]\nDESCRIPTION: [One sentence description]\nCATEGORY: [Category]";
-        const prompt = query ? `User Query: ${query}\n\nPlease analyze the screen in context of this query and provide a helpful response. If the query is a general question, answer it based on the screen content.` : defaultPrompt;
+        console.log('Sending to Ollama (127.0.0.1:11434)...');
+
+        const userProfile = store.get('userProfile') || {};
+        const profileContext = userProfile.name ? `User: ${userProfile.name}, Role: ${userProfile.role}, Tone Preference: ${userProfile.tone}, Extra Info: ${userProfile.preferences}` : "No specific user profile provided.";
+
+        const defaultPrompt = `
+Analyze this screen and provide 2 short, actionable productivity tips. 
+USER PROFILE: ${profileContext}
+Format exactly like this:
+TITLE: [Title]
+DESCRIPTION: [One sentence description]
+CATEGORY: [Category]`;
+
+        const orchestrationPrompt = `
+User Query: ${query}
+USER PROFILE: ${profileContext}
+
+Analyze the screen and answer the query. 
+IMPORTANT: If the query requires a sequence of actions (like clicking, typing, or navigating), suggest an ACTION SEQUENCE.
+Format your response naturally, but include specific ACTION items if applicable.
+Example Action: "ACTION: CLICK at [x,y]" or "ACTION: TYPE [text]".
+Stay in character based on the User Profile tone.`;
+
+        const prompt = query ? orchestrationPrompt : defaultPrompt;
 
         const data = JSON.stringify({
             model: "llava",
@@ -212,8 +367,8 @@ async function analyzeWithOllama(base64Image, query = null) {
             stream: false
         });
 
-        const options = {
-            hostname: 'localhost',
+        const req = http.request({
+            hostname: '127.0.0.1',
             port: 11434,
             path: '/api/generate',
             method: 'POST',
@@ -222,15 +377,9 @@ async function analyzeWithOllama(base64Image, query = null) {
                 'Content-Length': data.length
             },
             timeout: 30000
-        };
-
-        const req = http.request(options, (res) => {
+        }, (res) => {
             let responseData = '';
-
-            res.on('data', (chunk) => {
-                responseData += chunk;
-            });
-
+            res.on('data', (chunk) => responseData += chunk);
             res.on('end', () => {
                 try {
                     const parsed = JSON.parse(responseData);
@@ -240,13 +389,14 @@ async function analyzeWithOllama(base64Image, query = null) {
                     } else {
                         reject(new Error('No response from Ollama'));
                     }
-                } catch (err) {
-                    reject(err);
+                } catch (e) {
+                    reject(new Error("Failed to parse Ollama response"));
                 }
             });
         });
 
         req.on('error', (err) => {
+            console.error("Ollama Request Error:", err);
             reject(err);
         });
 
@@ -495,3 +645,23 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
+async function runGmailMission() {
+    if (!mainWindow) return;
+    try {
+        mainWindow.webContents.send('analysis-result', '🧩 Preparing Gmail Sync Strategy...');
+        const userProfile = store.get('userProfile') || {};
+
+        // Generate a 3-step plan: Read emails -> Summarize -> Write Notes
+        const plan = [
+            { step: "Open Gmail and fetch recent threads", action: "READ_EMAIL", count: 5 },
+            { step: "Synthesize content via LLM", action: "SUMMARIZE" },
+            { step: "Export insight to Apple Notes", action: "WRITE_NOTES" }
+        ];
+
+        console.log("Triggering Gmail Mission Plan Approval...");
+        mainWindow.webContents.send('plan-received', plan);
+    } catch (err) {
+        console.error('Gmail Mission initialization failed:', err);
+        mainWindow.webContents.send('analysis-result', `❌ Gmail Mission Failed: ${err.message}`);
+    }
+}
