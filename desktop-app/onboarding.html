@@ -239,7 +239,21 @@
     </div>
 
     <script>
-        const ipc = window.api;
+        let ipc;
+        try {
+            if (window.api) {
+                ipc = window.api;
+            } else {
+                const { ipcRenderer } = require('electron');
+                ipc = {
+                    send: (channel, data) => ipcRenderer.send(channel, data),
+                    on: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(...args))
+                };
+            }
+        } catch (e) {
+            console.error('IPC initialization failed:', e);
+        }
+
         const mainBtn = document.getElementById('mainBtn');
         const ollamaStatusText = document.getElementById('ollamaStatus');
         const modelStatusText = document.getElementById('modelStatus');
@@ -251,7 +265,13 @@
         let systemState = 'startup';
 
         function init() {
-            ipc.send('check-ollama');
+            if (ipc) {
+                console.log('Sending check-ollama...');
+                ipc.send('check-ollama');
+            } else {
+                console.error('IPC not available');
+                ollamaStatusText.textContent = 'Error: IPC Missing';
+            }
         }
 
         ipc.on('ollama-status', (data) => {
@@ -265,20 +285,14 @@
             else if (data.status === 'ready') {
                 ollamaStatusText.textContent = 'Installed';
                 ollamaStatusText.style.color = '#22c55e';
-
-                if (data.modelExists) {
-                    modelStatusText.textContent = 'LLaVA Loaded';
-                    modelStatusText.style.color = '#22c55e';
-                    mainBtn.disabled = false;
-                    mainBtn.textContent = 'Get Started';
-                    systemState = 'ready';
-                } else {
-                    modelStatusText.textContent = 'Not Found';
-                    modelStatusText.style.color = '#f59e0b';
-                    mainBtn.disabled = false;
-                    mainBtn.textContent = 'Download Vision Model';
-                    systemState = 'pull_required';
-                }
+                
+                // Always show Get Started if Ollama is available
+                // Models will be pulled on demand
+                modelStatusText.textContent = data.models && data.models.length > 0 ? 'Ready' : 'Models Available';
+                modelStatusText.style.color = '#22c55e';
+                mainBtn.disabled = false;
+                mainBtn.textContent = 'Get Started';
+                systemState = 'ready';
             }
             else if (data.status === 'installed') {
                 init();

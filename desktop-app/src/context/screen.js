@@ -1,9 +1,30 @@
 const { desktopCapturer, screen } = require('electron');
 const Tesseract = require('tesseract.js');
 
+let cachedWorker = null;
+
+async function getWorker() {
+    if (cachedWorker) {
+        return cachedWorker;
+    }
+    console.log('Initializing Tesseract worker with optimized config...');
+    cachedWorker = await Tesseract.createWorker('eng', 1, {
+        logger: m => {
+            if (m.status === 'recognizing text') {
+                console.log(`[OCR] Progress: ${Math.round(m.progress * 100)}%`);
+            }
+        }
+    });
+    await cachedWorker.setParameters({
+        tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+    });
+    return cachedWorker;
+}
+
 async function getScreenText(mainWindow) {
     let worker = null;
     try {
+        console.log('[OCR] Capturing screen...');
         const sources = await desktopCapturer.getSources({
             types: ['screen'],
             thumbnailSize: screen.getPrimaryDisplay().size
@@ -11,50 +32,46 @@ async function getScreenText(mainWindow) {
         if (sources.length === 0) throw new Error('No screen sources found');
         const buffer = sources[0].thumbnail.toPNG();
 
-        console.log('Initializing Tesseract worker...');
-        worker = await Tesseract.createWorker('eng');
+        worker = await getWorker();
         const result = await worker.recognize(buffer);
 
         console.log('OCR Complete. Confidence:', result.data.confidence);
 
         if (!result || !result.data) {
             console.error('OCR returned no data.');
-            if (worker) await worker.terminate();
-            return { text: '', words: [] };
+            return { text: '', words: [], confidence: 0 };
         }
 
-        // DEBUG: Log the keys to see if 'words' exists or is named something else
-        console.log('OCR Data Keys:', Object.keys(result.data));
-        if (result.data.words) {
-            console.log('Words count:', result.data.words.length);
-        } else {
-            console.warn('WARNING: result.data.words is missing!');
-        }
+        const text = result.data.text || '';
+        const confidence = result.data.confidence || 0;
 
         let words = [];
-        if (result.data.words) {
-            words = result.data.words.map(w => ({
-                text: w.text,
-                confidence: w.confidence,
-                bbox: w.bbox
-            }));
-        } else {
-            console.warn('WARNING: result.data.words is missing. Returning empty word list.');
+        if (result.data.lines) {
+            words = result.data.lines.flatMap(line => 
+                (line.words || []).map(w => ({
+                    text: w.text,
+                    confidence: w.confidence,
+                    bbox: w.bbox
+                }))
+            );
         }
 
         const data = {
-            text: result.data.text,
+            text: text,
             words: words,
-            windowBounds: mainWindow.getBounds()
+            confidence: confidence,
+            windowBounds: mainWindow ? mainWindow.getBounds() : null,
+            lowConfidence: confidence < 50
         };
 
-        await worker.terminate();
+        if (confidence < 50) {
+            console.log('[OCR] Low confidence - may need retry');
+        }
+
         return data;
     } catch (err) {
         console.error('OCR failed:', err);
-        if (worker) {
-            try { await worker.terminate(); } catch (e) { }
-        }
+        cachedWorker = null;
         throw err;
     }
 }
@@ -67,18 +84,18 @@ async function readScreenText() {
         console.log('Capturing screen for OCR...');
         const img = await screenshot({ format: 'png' });
 
-        console.log('Initializing Tesseract...');
-        worker = await Tesseract.createWorker('eng');
+        worker = await getWorker();
         const { data } = await worker.recognize(img);
 
-        await worker.terminate();
-        return data?.text || "";
+        console.log('OCR Confidence:', data.confidence);
+        return {
+            text: data.text || "",
+            confidence: data.confidence || 0
+        };
     } catch (err) {
         console.error('OCR (readScreenText) failed:', err);
-        if (worker) {
-            try { await worker.terminate(); } catch (e) { }
-        }
-        return "";
+        cachedWorker = null;
+        return { text: "", confidence: 0 };
     }
 }
 

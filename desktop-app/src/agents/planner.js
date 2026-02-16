@@ -55,8 +55,27 @@ Example:
             res.on('data', (chunk) => { responseBody += chunk; });
             res.on('end', () => {
                 try {
+                    // Check for empty response
+                    if (!responseBody || responseBody.trim() === '') {
+                        throw new Error('Empty response from Ollama. Please ensure Ollama is running.');
+                    }
+
                     const parsed = JSON.parse(responseBody);
+
+                    // CRITICAL: Check for error field BEFORE accessing response
+                    if (parsed.error) {
+                        if (parsed.error.includes('EOF') || parsed.error.includes('unexpected EOF')) {
+                            throw new Error('Ollama connection error. The model may be loading. Please wait 10 seconds and try again, or run: ollama pull llava');
+                        }
+                        throw new Error(`Ollama error: ${parsed.error}`);
+                    }
+
                     const rawResponse = parsed.response;
+
+                    // Check if response exists and is a string
+                    if (!rawResponse) {
+                        throw new Error('No response field in Ollama output');
+                    }
 
                     if (typeof rawResponse !== 'string') {
                         throw new Error(`Unexpected Ollama response format: ${JSON.stringify(parsed)}`);
@@ -75,7 +94,7 @@ Example:
             });
         });
 
-        req.on('error', (e) => reject(e));
+        req.on('error', (e) => reject(new Error(`Ollama connection failed: ${e.message}. Is Ollama running?`)));
         req.write(data);
         req.end();
     });

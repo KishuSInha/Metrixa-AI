@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metrixa Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+            background: #ffffff;
+            color: #111111;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+        }
+
+        /* Header - Minimal */
+        .header {
+            padding: 16px 24px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            -webkit-app-region: drag;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .header-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: #111;
+        }
+
+        .connection-status {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+            -webkit-app-region: no-drag;
+        }
+
+        .header-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .header-btn:hover {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header-btn.close:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            scroll-behavior: smooth;
+        }
+
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #e5e5e5;
+            border-radius: 3px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: #d0d0d0;
+        }
+
+        /* Message Styles - Minimal */
+        .message {
+            display: flex;
+            flex-direction: column;
+            padding: 12px 0;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message.ai {
+            align-items: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 720px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 15px;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-bubble {
+            background: #f3f3f3;
+            color: #111;
+        }
+
+        .message.ai .message-bubble {
+            background: transparent;
+            color: #111;
+            padding-left: 0;
+        }
+
+        /* Welcome State */
+        .welcome-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 24px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .welcome-icon {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .welcome-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .welcome-title {
+            font-size: 20px;
+            font-weight: 500;
+            color: #111;
+            margin-bottom: 8px;
+        }
+
+        .welcome-subtitle {
+            font-size: 14px;
+            color: #666;
+            max-width: 320px;
+            line-height: 1.5;
+            margin-bottom: 32px;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .quick-action-btn {
+            padding: 12px 16px;
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+
+        .quick-action-btn:hover {
+            background: #f5f5f5;
+            border-color: #d0d0d0;
+        }
+
+        /* Agent Status - Shows execution steps */
+        .agent-status {
+            padding: 16px 24px;
+            border-top: 1px solid #f0f0f0;
+            background: #fafafa;
+            flex-shrink: 0;
+        }
+
+        .agent-status.hidden {
+            display: none;
+        }
+
+        .status-header {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .status-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .status-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #999;
+            transition: all 0.2s ease;
+        }
+
+        .status-step.active {
+            color: #111;
+        }
+
+        .status-step.completed {
+            color: #22c55e;
+        }
+
+        .step-indicator {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-indicator::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.3;
+        }
+
+        .status-step.active .step-indicator::before {
+            opacity: 1;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-step.completed .step-indicator::before {
+            opacity: 1;
+            background: #22c55e;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Context Bar */
+        .context-bar {
+            padding: 8px 24px;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            flex-shrink: 0;
+            background: #fafafa;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .context-bar.hidden {
+            display: none;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 16px 24px 24px;
+            background: #ffffff;
+            flex-shrink: 0;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 999px;
+            padding: 6px 6px 6px 20px;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .input-wrapper:focus-within {
+            background: #ffffff;
+            border-color: #d0d0d0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        #taskInput {
+            flex: 1;
+            min-height: 40px;
+            max-height: 120px;
+            padding: 10px 0;
+            background: transparent;
+            border: none;
+            color: #111;
+            font-size: 15px;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            line-height: 1.5;
+        }
+
+        #taskInput::placeholder {
+            color: #999;
+        }
+
+        .send-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #111;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover {
+            background: #333;
+            transform: scale(1.05);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Show Plan Toggle */
+        .plan-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .plan-toggle:hover {
+            background: #f5f5f5;
+        }
+
+        .plan-toggle-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .plan-toggle-switch {
+            width: 36px;
+            height: 20px;
+            background: #e5e5e5;
+            border-radius: 10px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .plan-toggle-switch.active {
+            background: #111;
+        }
+
+        .plan-toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .plan-toggle-switch.active::after {
+            left: 18px;
+        }
+
+        /* Plan Preview */
+        .plan-preview {
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .plan-preview.hidden {
+            display: none;
+        }
+
+        .plan-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .plan-step:last-child {
+            border-bottom: none;
+        }
+
+        .plan-step-number {
+            width: 20px;
+            height: 20px;
+            background: #111;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .plan-step-content {
+            font-size: 13px;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        /* Scroll to Bottom Button */
+        .scroll-bottom-btn {
+            position: absolute;
+            bottom: 100px;
+            right: 32px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            color: #666;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.15s ease;
+            z-index: 100;
+        }
+
+        .scroll-bottom-btn.visible {
+            display: flex;
+        }
+
+        .scroll-bottom-btn:hover {
+            background: #f5f5f5;
+            transform: translateY(-2px);
+        }
+
+        /* Error Message */
+        .message.error .message-bubble {
+            color: #dc2626;
+            background: #fef2f2;
+        }
+
+        /* Empty State */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 18V4L12 12L20 4V18" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span class="header-text">Metrixa Agent</span>
+                </div>
+                <span class="connection-status" id="connectionStatus"></span>
+            </div>
+            <div class="header-controls">
+                <button class="header-btn" id="minimizeBtn" title="Minimize">−</button>
+                <button class="header-btn close" id="closeBtn" title="Close (ESC)">×</button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Messages Container -->
+            <div class="messages-container" id="messagesContainer">
+                <!-- Welcome State -->
+                <div class="welcome-container" id="welcomeContainer">
+                    <div class="welcome-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 17L12 22L22 17" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 12L12 17L22 12" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h1 class="welcome-title">What would you like me to do?</h1>
+                    <p class="welcome-subtitle">I can analyze your screen, summarize content, extract tasks, or execute complex workflows.</p>
+                    
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="setInput('Summarize this content')">Summarize this content</button>
+                        <button class="quick-action-btn" onclick="setInput('Extract action items')">Extract action items</button>
+                        <button class="quick-action-btn" onclick="setInput('Explain what I\'m seeing')">Explain what I'm seeing</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scroll to Bottom Button -->
+            <button class="scroll-bottom-btn" id="scrollBottomBtn" title="Scroll to bottom">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M19 12l-7 7-7-7"/>
+                </svg>
+            </button>
+        </main>
+
+        <!-- Agent Status (shows during execution) -->
+        <div class="agent-status hidden" id="agentStatus">
+            <div class="status-header" id="statusHeader">Metrixa is planning...</div>
+            <div class="status-steps" id="statusSteps"></div>
+        </div>
+
+        <!-- Context Bar -->
+        <div class="context-bar hidden" id="contextBar">
+            Working in: <span id="contextAppName">Unknown</span>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <!-- Plan Preview (hidden by default) -->
+            <div class="plan-preview hidden" id="planPreview"></div>
+
+            <div class="input-wrapper">
+                <textarea 
+                    id="taskInput" 
+                    placeholder="Type your task..."
+                    rows="1"
+                ></textarea>
+                <button class="send-btn" id="sendBtn" title="Send (Enter) • Force execute (⌘+Enter)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="floating-panel.js"></script>
+</body>
+</html>

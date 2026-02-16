@@ -206,6 +206,66 @@
             color: #666;
         }
 
+        .window-controls {
+            display: flex;
+            gap: 8px;
+            margin-right: 16px;
+            order: -1;
+        }
+
+        .window-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .window-btn.minimize {
+            background: #FFFFFF;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .window-btn.minimize:hover {
+            background: #f0f0f0;
+            transform: scale(1.05);
+        }
+
+        .window-btn.maximize {
+            background: #FFFFFF;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .window-btn.maximize:hover {
+            background: #f0f0f0;
+            transform: scale(1.05);
+        }
+
+        .window-btn.close {
+            background: #FFFFFF;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .window-btn.close:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
         .chat-messages {
             flex: 1;
             padding: 32px;
@@ -589,6 +649,23 @@
                 <h2 class="app-title">Metrixa AI</h2>
             </div>
 
+            <div class="section-title">Quick Actions</div>
+            <div class="mission-control">
+                <div class="pixels-toggle" id="floatingPanelToggle">
+                    <input type="checkbox" id="floatingPanelCheckbox" hidden />
+                    <div class="toggle-switch"></div>
+                    <div class="perm-name">Show Agent Panel</div>
+                </div>
+                <div class="pixels-toggle" id="refreshContextToggle">
+                    <div class="toggle-switch"></div>
+                    <div class="perm-name">Refresh Context</div>
+                </div>
+                <div class="pixels-toggle" id="screenshotToggle">
+                    <div class="toggle-switch"></div>
+                    <div class="perm-name">Take Screenshot</div>
+                </div>
+            </div>
+
             <div class="section-title">Mission Control</div>
             <div class="mission-control">
                 <div class="perm-item">
@@ -632,7 +709,14 @@
         <div class="right-panel">
             <div class="chat-container">
                 <div class="chat-header">
-                    <div class="header-title">Vision Chat</div>
+                    <div class="header-left">
+                        <div class="window-controls">
+                            <button class="window-btn minimize" id="minimizeBtn" title="Minimize">−</button>
+                            <button class="window-btn maximize" id="maximizeBtn" title="Maximize">□</button>
+                            <button class="window-btn close" id="closeBtn" title="Close">×</button>
+                        </div>
+                        <div class="header-title">Vision Chat</div>
+                    </div>
                     <div class="clear-btn" id="clearBtn">Clear Session</div>
                 </div>
 
@@ -663,10 +747,26 @@
     <script>
         function initApp() {
             console.log('🚀 App Initialization Started');
-            const ipc = window.api;
+
+            let ipc;
+            try {
+                if (window.api) {
+                    ipc = window.api;
+                } else {
+                    const { ipcRenderer } = require('electron');
+                    ipc = {
+                        invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+                        send: (channel, data) => ipcRenderer.send(channel, data),
+                        on: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(...args))
+                    };
+                }
+            } catch (e) {
+                console.error('IPC initialization failed:', e);
+            }
+
             if (!ipc) {
-                alert('CRITICAL ERROR: window.api is missing. Preload script failed.');
-                console.error('❌ window.api not found');
+                alert('CRITICAL ERROR: IPC capabilities missing.');
+                console.error('❌ IPC not found');
                 return;
             }
 
@@ -915,6 +1015,85 @@
             chatInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendMessage();
             });
+
+            // Window controls
+            const minimizeBtn = document.getElementById('minimizeBtn');
+            const maximizeBtn = document.getElementById('maximizeBtn');
+            const closeBtn = document.getElementById('closeBtn');
+
+            if (minimizeBtn) {
+                minimizeBtn.addEventListener('click', () => {
+                    ipc.send('minimize-window');
+                });
+            }
+
+            if (maximizeBtn) {
+                maximizeBtn.addEventListener('click', () => {
+                    ipc.send('maximize-window');
+                });
+            }
+
+            ipc.on('maximized-state-changed', (isMaximized) => {
+                maximizeBtn.textContent = isMaximized ? '❐' : '□';
+            });
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    ipc.send('close-window');
+                });
+            }
+
+            // Quick action buttons
+            const floatingPanelToggle = document.getElementById('floatingPanelToggle');
+            const floatingPanelCheckbox = document.getElementById('floatingPanelCheckbox');
+            const refreshContextToggle = document.getElementById('refreshContextToggle');
+            const screenshotToggle = document.getElementById('screenshotToggle');
+
+            if (floatingPanelToggle) {
+                floatingPanelToggle.addEventListener('click', (e) => {
+                    if (e.target.id === 'floatingPanelCheckbox') return;
+                    floatingPanelCheckbox.checked = !floatingPanelCheckbox.checked;
+                    ipc.send('toggle-floating-panel');
+                    if (floatingPanelCheckbox.checked) {
+                        floatingPanelToggle.classList.add('active');
+                    } else {
+                        floatingPanelToggle.classList.remove('active');
+                    }
+                });
+            }
+
+            if (refreshContextToggle) {
+                refreshContextToggle.addEventListener('click', async () => {
+                    addMessage('ai', 'Refreshing context...');
+                    try {
+                        const result = await ipc.invoke('detect-context');
+                        if (result.success) {
+                            addMessage('ai', `Context refreshed: ${result.data.app?.name || 'Unknown App'}`);
+                        } else {
+                            addMessage('ai', `Failed to refresh context: ${result.error}`);
+                        }
+                    } catch (err) {
+                        addMessage('ai', `Error: ${err.message}`);
+                    }
+                });
+            }
+
+            if (screenshotToggle) {
+                screenshotToggle.addEventListener('click', async () => {
+                    addMessage('ai', 'Taking screenshot...');
+                    try {
+                        const result = await ipc.invoke('get-screen-text');
+                        if (result.text) {
+                            const preview = result.text.substring(0, 200);
+                            addMessage('ai', `Screenshot captured (${result.text.length} chars). Preview: "${preview}..."`);
+                        } else {
+                            addMessage('ai', 'Screenshot captured but no text detected.');
+                        }
+                    } catch (err) {
+                        addMessage('ai', `Error: ${err.message}`);
+                    }
+                });
+            }
 
             const clearBtn = document.getElementById('clearBtn');
             clearBtn.addEventListener('click', () => {
