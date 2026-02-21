@@ -283,9 +283,10 @@ const Landing = () => {
 
                 <div className="relative z-10 max-w-5xl mx-auto pt-20">
                     <motion.div
-                        initial={{ opacity: 0, x: -30 }}
-                        animate={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                        className="flex flex-col items-center text-center"
                     >
 
                         <h1 className="text-6xl md:text-[7rem] font-bold text-white mb-8 leading-[0.9] tracking-tighter">
@@ -296,7 +297,7 @@ const Landing = () => {
                             Metrixa uses local vision to control your native software. No APIs, no plugins—just instant, sovereign automation across your entire workspace.
                         </p>
 
-                        <div className="flex flex-col items-start gap-4">
+                        <div className="flex flex-col items-center gap-4">
                             <a
                                 href={downloadUrl}
                                 download
