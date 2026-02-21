@@ -10,7 +10,6 @@
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #050505;
-  /* Deep black, not pure black */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -25,6 +24,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
+  background-color: #050505;
 }
 
 #root {
