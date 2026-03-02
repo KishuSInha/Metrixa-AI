@@ -2,7 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Documentation from './pages/Documentation';
 import Manifesto from './pages/Manifesto';
-import Legal from './pages/Legal';
+import Privacy from './pages/Privacy';
 
 const App = () => {
   return (
@@ -10,7 +10,8 @@ const App = () => {
       <Route path="/" element={<Landing />} />
       <Route path="/documentation" element={<Documentation />} />
       <Route path="/manifesto" element={<Manifesto />} />
-      <Route path="/legal" element={<Legal />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/legal" element={<Privacy />} />
     </Routes>
   );
 }

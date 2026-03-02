@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Shield, ArrowRight, Globe } from 'lucide-react';
+import { Shield, ArrowLeft, ArrowRight, Globe } from 'lucide-react';
 
-const Manifesto = () => {
+const Privacy = () => {
     const downloadUrl = "https://github.com/KishuSInha/Metrixa-AI/releases/download/v0.1.1/Metrixa.AI-0.1.1-arm64.dmg";
 
     return (
@@ -15,8 +15,8 @@ const Manifesto = () => {
                         <span className="text-[22px] font-bold tracking-tight">Metrixa</span>
                     </Link>
                     <div className="flex items-center gap-8">
-                        <Link to="/privacy" className="text-[14px] font-bold uppercase tracking-widest text-black/40 hover:text-black transition-colors hidden md:block">
-                            Privacy
+                        <Link to="/manifesto" className="text-[14px] font-bold uppercase tracking-widest text-black/40 hover:text-black transition-colors hidden md:block">
+                            Manifesto
                         </Link>
                         <Link to="/" className="text-[14px] font-bold uppercase tracking-widest text-black/40 hover:text-black transition-colors border border-black/10 px-6 py-2 rounded-full">
                             Close
@@ -32,53 +32,54 @@ const Manifesto = () => {
                     transition={{ duration: 0.8 }}
                 >
                     <h1 className="text-7xl md:text-[110px] font-semibold tracking-[-0.05em] leading-[0.9] mb-12">
-                        Declaration of <br /> Digital Independence.
+                        The Privacy <br /> Invariant.
                     </h1>
                     <p className="text-2xl md:text-[34px] text-black/40 font-medium leading-tight max-w-3xl">
-                        A new paradigm for sovereign intelligence. We believe compute belongs to the user, not the provider.
+                        A commitment to sovereign execution. Data security isn't a setting—it's the only way we build.
                     </p>
                 </motion.div>
             </header>
 
             <main className="relative z-10 px-10 md:px-16 py-32 max-w-[1400px] mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-32">
+                 <div className="grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-32">
                     <div className="md:col-span-12 lg:col-span-4 sticky lg:top-48 h-fit mb-12 lg:mb-0">
-                        <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-[1.1]">The Sovereign <br/> Intent</h2>
+                        <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-[1.1]">Zero-Knowledge <br/> Orchestration</h2>
                     </div>
                     <div className="md:col-span-12 lg:col-span-8 space-y-48">
                         
-                        <section className="space-y-12">
-                            <span className="text-sm font-bold uppercase tracking-[0.4em] text-[#74D4FB]">Manifesto 01</span>
-                            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">The Local Invariant</h2>
-                            <p className="text-2xl text-black/60 font-medium leading-relaxed">
-                                Privacy is not a configuration; it is an architectural invariant. Metrixa executes exclusively on local metal, ensuring your digital intent never fragments into a third-party cloud.
+                        <section className="space-y-10 group">
+                            <span className="text-sm font-bold uppercase tracking-[0.4em] text-[#74D4FB]">Protocol 01</span>
+                            <h3 className="text-3xl md:text-4xl font-bold tracking-tight">Neural Edge Processing</h3>
+                            <p className="text-2xl text-black/40 font-medium leading-relaxed">
+                                Metrixa leverages the Apple Silicon Neural Engine to process all intent on-device. Your screen and data are tokenized in volatile memory and instantly purged. We have zero visibility into your digital session.
                             </p>
                         </section>
 
-                        <section className="space-y-12">
-                            <span className="text-sm font-bold uppercase tracking-[0.4em] text-[#74D4FB]">Manifesto 02</span>
-                            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Neural Autonomy</h2>
-                            <p className="text-2xl text-black/60 font-medium leading-relaxed">
-                                True agency requires isolation. By leveraging Unified Memory Execution, we enable complex autonomous labor without the security trade-offs of remote inference.
+                        <section className="space-y-10 group">
+                            <span className="text-sm font-bold uppercase tracking-[0.4em] text-[#74D4FB]">Protocol 02</span>
+                            <h3 className="text-3xl md:text-4xl font-bold tracking-tight">Sovereign Inference</h3>
+                            <p className="text-2xl text-black/40 font-medium leading-relaxed">
+                                By utilizing Unified Memory Execution, Metrixa avoids the cloud leakage inherent in API-based assistants. Your reasoning engine lives in your physical hardware, ensuring total isolation from centralized data silos.
                             </p>
                         </section>
 
-                        <section className="space-y-12">
-                            <span className="text-sm font-bold uppercase tracking-[0.4em] text-[#74D4FB]">Manifesto 03</span>
-                            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Ownership of Labor</h2>
-                            <p className="text-2xl text-black/60 font-medium leading-relaxed">
-                                Your patterns represent your value. Metrixa builds a sovereign context layer that serves as your digital extension—permanently encrypted and physically contained.
+                        <section className="space-y-10 group">
+                            <span className="text-sm font-bold uppercase tracking-[0.4em] text-[#74D4FB]">Protocol 03</span>
+                            <h3 className="text-3xl md:text-4xl font-bold tracking-tight">Contextual Ownership</h3>
+                            <p className="text-2xl text-black/40 font-medium leading-relaxed">
+                                Your vector history and memory graphs are stored in a local encrypted node. You maintain absolute root authority over your intelligence stack. Your context is restricted to your machine—forever.
                             </p>
                         </section>
+
                     </div>
                 </div>
             </main>
 
-            <section className="px-10 md:px-16 max-w-[1400px] mx-auto pb-8 text-left">
+            <section className="px-10 md:px-16 max-w-[1400px] mx-auto pb-8">
               <div className="w-full bg-[#74D4FB] rounded-[40px] py-32 px-12 md:px-24 relative overflow-hidden group">
                  <div className="relative z-10 max-w-4xl">
-                    <h3 className="text-6xl md:text-[90px] font-semibold tracking-[-0.05em] leading-[0.9] mb-16 text-black text-left">
-                      Join the <br /> Sovereignty.
+                    <h3 className="text-6xl md:text-[90px] font-semibold tracking-[-0.05em] leading-[0.9] mb-16 text-black">
+                      Secure your <br /> Autonomy.
                     </h3>
                     <a 
                       href={downloadUrl}
@@ -144,4 +145,4 @@ const Manifesto = () => {
     );
 };
 
-export default Manifesto;
+export default Privacy;

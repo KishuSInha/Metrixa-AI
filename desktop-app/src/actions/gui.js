@@ -35,8 +35,6 @@ async function guiType(text) {
 }
 
 async function guiMove(x, y) {
-    // macOS AppleScript doesn't have a direct "move mouse" without clicking easily
-    // We usually click at the location to "move and interact"
     console.log(`GUI Move requested to ${x}, ${y} (No-op in AppleScript)`);
 }
 
