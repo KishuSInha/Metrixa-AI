@@ -17,7 +17,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #F5F5F3;
+            background: #FFFFFF;
             color: #1A1A1A;
             height: 100vh;
             overflow: hidden;
@@ -39,7 +39,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            background: #F5F5F3;
+            background: #FFFFFF;
         }
 
         .logo-icon {
@@ -101,7 +101,7 @@
         }
 
         .button {
-            background: #C4F582;
+            background: #74D4FB;
             color: #1A1A1A;
             border: none;
             padding: 14px 32px;
@@ -117,7 +117,7 @@
 
         .button:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(196, 245, 130, 0.4);
+            box-shadow: 0 8px 20px rgba(116, 212, 251, 0.4);
         }
 
         .button:disabled {
@@ -136,7 +136,7 @@
         }
 
         .visual-card {
-            background: linear-gradient(135deg, #6EC1E4 0%, #E9A4D4 50%, #FFB7A3 100%);
+            background: linear-gradient(135deg, #74D4FB 0%, #FFFFFF 100%);
             border-radius: 28px;
             width: 100%;
             max-width: 480px;
@@ -185,7 +185,7 @@
 
         .progress-fill {
             height: 100%;
-            background: #C4F582;
+            background: #74D4FB;
             width: 0%;
             transition: width 0.3s ease;
         }
@@ -197,7 +197,7 @@
         <div class="left-panel">
             <div class="logo-icon">
                 <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 32V8L20 20L32 8V32" stroke="#1A1A1A" stroke-width="3.5" stroke-linecap="square" />
+                    <path d="M8 32V8L20 20L32 8V32" stroke="#74D4FB" stroke-width="3.5" stroke-linecap="square" />
                 </svg>
             </div>
 
@@ -284,12 +284,12 @@
             }
             else if (data.status === 'ready') {
                 ollamaStatusText.textContent = 'Installed';
-                ollamaStatusText.style.color = '#22c55e';
+                ollamaStatusText.style.color = '#74D4FB';
                 
                 // Always show Get Started if Ollama is available
                 // Models will be pulled on demand
                 modelStatusText.textContent = data.models && data.models.length > 0 ? 'Ready' : 'Models Available';
-                modelStatusText.style.color = '#22c55e';
+                modelStatusText.style.color = '#74D4FB';
                 mainBtn.disabled = false;
                 mainBtn.textContent = 'Get Started';
                 systemState = 'ready';
