@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { app, BrowserWindow, ipcMain, desktopCapturer, screen, globalShortcut, Notification } = require('electron');
 app.setName('Metrixa AI');
 const path = require('path');
@@ -59,6 +60,8 @@ let actionExecutor = null;
 // Keep a global reference of the window object
 let mainWindow;
 let floatingPanel = null;
+let floatingIcon = null;
+let cursorTimer = null;
 let monitoringService;
 let agentRunner;
 
@@ -77,9 +80,7 @@ function createWindow() {
         transparent: true,
         alwaysOnTop: true,
         resizable: true,
-        hasShadow: true,
-        vibrancy: 'hud',
-        visualEffectState: 'active'
+        hasShadow: true
     });
 
     // LOAD CORRECT FILE
@@ -89,12 +90,14 @@ function createWindow() {
         mainWindow = null;
     });
 
-    mainWindow.on('maximize', () => {
-        mainWindow.webContents.send('maximized-state-changed', true);
+    mainWindow.on('minimize', () => {
+        console.log('[MAIN] mainWindow minimized');
+        showFloatingIcon();
     });
 
-    mainWindow.on('unmaximize', () => {
-        mainWindow.webContents.send('maximized-state-changed', false);
+    mainWindow.on('hide', () => {
+        console.log('[MAIN] mainWindow hidden');
+        showFloatingIcon();
     });
 
     // Initialize Permissions
@@ -105,6 +108,115 @@ function createWindow() {
     // Verify Ollama on startup
     checkOllamaStatus();
 }
+
+function createFloatingIcon() {
+    try {
+        console.log('[MAIN] createFloatingIcon starting');
+        if (floatingIcon && !floatingIcon.isDestroyed()) {
+            console.log('[MAIN] floatingIcon already exists');
+            return;
+        }
+
+        const primaryDisplay = screen.getPrimaryDisplay();
+        const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+        console.log(`[MAIN] Screen size: ${screenWidth}x${screenHeight}`);
+
+        const iconSize = 60;
+        const x = 30; // Closer to corner on left
+        const y = screenHeight - iconSize - 30; // Bottom-left corner
+        console.log(`[MAIN] Creating floating icon at: ${x}, ${y}`);
+
+        floatingIcon = new BrowserWindow({
+            width: iconSize,
+            height: iconSize,
+            x: x,
+            y: y,
+            webPreferences: {
+                nodeIntegration: true,
+                contextIsolation: false,
+                backgroundThrottling: false,
+                webSecurity: false
+            },
+            frame: false,
+            transparent: true,
+            alwaysOnTop: true,
+            focusable: false,
+            resizable: false,
+            hasShadow: false,
+            show: false,
+            skipTaskbar: true,
+            backgroundColor: '#00000000',
+            roundedCorners: false,
+            fullscreenable: false
+        });
+
+        // Forced transparency
+        floatingIcon.setBackgroundColor('#00000000');
+        floatingIcon.setOpacity(0.999);
+        
+        // Ensure it stays on top
+        floatingIcon.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+        floatingIcon.setAlwaysOnTop(true, 'floating');
+
+        floatingIcon.loadFile('floating-icon.html');
+        console.log('[MAIN] floatingIcon loaded floating-icon.html');
+
+        floatingIcon.on('closed', () => {
+            console.log('[MAIN] floatingIcon closed');
+            floatingIcon = null;
+        });
+        
+        floatingIcon.on('error', (err) => {
+            console.error('[MAIN] floatingIcon error:', err);
+        });
+        
+        floatingIcon.once('ready-to-show', () => {
+            console.log('[MAIN] floatingIcon ready to show');
+        });
+    } catch (error) {
+        console.error('[MAIN] Error creating floating icon:', error);
+    }
+}
+
+function showFloatingIcon() {
+    console.log('[MAIN] showFloatingIcon called');
+    if (!floatingIcon || floatingIcon.isDestroyed()) {
+        console.log('[MAIN] Creating new floating icon from showFloatingIcon');
+        createFloatingIcon();
+    }
+    
+    if (floatingIcon) {
+        if (!floatingIcon.isVisible()) {
+            console.log('[MAIN] Showing floating icon');
+            floatingIcon.show();
+        }
+        
+        // Start cursor tracking
+        if (!cursorTimer) {
+            cursorTimer = setInterval(() => {
+                const cursor = screen.getCursorScreenPoint();
+                if (floatingIcon && !floatingIcon.isDestroyed()) {
+                    floatingIcon.webContents.send('cursor-move', cursor);
+                }
+            }, 50); // 20fps tracking
+        }
+    } else {
+        console.error('[MAIN] Failed to show floating icon: floatingIcon is null');
+    }
+}
+
+function hideFloatingIcon() {
+    console.log('[MAIN] hideFloatingIcon called');
+    if (cursorTimer) {
+        clearInterval(cursorTimer);
+        cursorTimer = null;
+    }
+    if (floatingIcon && !floatingIcon.isDestroyed()) {
+        console.log('[MAIN] Hiding floating icon');
+        floatingIcon.hide();
+    }
+}
+
 
 // Create Floating Panel Window - Centered at bottom
 function createFloatingPanel() {
@@ -140,14 +252,12 @@ function createFloatingPanel() {
                 backgroundThrottling: false
             },
             frame: false,
-            transparent: false,
-            backgroundColor: '#ffffff',
+            backgroundColor: '#00000000',
             alwaysOnTop: true,
             resizable: true,
             hasShadow: true,
             show: false,
-            roundedCorners: true,
-            titleBarStyle: 'hidden'
+            roundedCorners: true
         });
 
         floatingPanel.loadFile('floating-panel.html');
@@ -248,6 +358,12 @@ ipcMain.on('minimize-window', () => {
     if (mainWindow) mainWindow.minimize();
 });
 
+ipcMain.on('restore-main-window', () => {
+    // In this new design, clicking the icon opens the Agent panel
+    showFloatingPanel();
+});
+
+
 // Force show floating panel - emergency recovery
 ipcMain.on('force-show-panel', () => {
     console.log('[MAIN] Force show panel requested');
@@ -269,6 +385,11 @@ ipcMain.on('force-show-panel', () => {
     } catch (error) {
         console.error('[MAIN] Force show panel failed:', error);
     }
+});
+
+ipcMain.on('force-show-icon', () => {
+    console.log('[MAIN] Force show icon requested');
+    showFloatingIcon();
 });
 
 ipcMain.on('close-window', () => {
@@ -399,6 +520,20 @@ ipcMain.on('check-ollama', () => {
     checkOllamaStatus();
 });
 
+ipcMain.on('check-llm-status', async (event) => {
+    const router = new LLMRouter();
+    await router.isAvailable();
+    const primary = await router._detectPrimary();
+    
+    if (primary === 'openai') {
+        event.reply('llm-status', { status: 'ready', provider: 'OpenAI GPT-4o-mini' });
+    } else if (primary === 'ollama') {
+        event.reply('llm-status', { status: 'ready', provider: 'Ollama' });
+    } else {
+        event.reply('llm-status', { status: 'error', provider: 'None' });
+    }
+});
+
 // Complete Setup Handler
 ipcMain.on('complete-setup', () => {
     console.log('Setup complete, loading main app...');
@@ -407,7 +542,13 @@ ipcMain.on('complete-setup', () => {
         // Enable resizing for main app
         mainWindow.setResizable(true);
         mainWindow.setSize(1200, 800);
-        mainWindow.center();
+        
+        // ONLY center and show if not minimized/hidden
+        if (!mainWindow.isMinimized() && mainWindow.isVisible()) {
+            mainWindow.center();
+        } else {
+            console.log('[MAIN] Setup complete, staying minimized/hidden as per user state');
+        }
     }
 });
 
@@ -546,7 +687,8 @@ async function captureAndAnalyze(query = null) {
 
     try {
         // Minimize window for clean capture
-        const wasMinimized = mainWindow.isMinimized();
+        // Minimize window for clean capture if it's currently showing
+        const wasMinimized = mainWindow.isMinimized() || !mainWindow.isVisible();
         if (!wasMinimized) {
             mainWindow.minimize();
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -560,7 +702,7 @@ async function captureAndAnalyze(query = null) {
 
         if (sources.length === 0) throw new Error('No screen sources found');
 
-        // Restore window
+        // Restore window ONLY if it was NOT already minimized
         if (!wasMinimized && mainWindow.isMinimized()) {
             mainWindow.restore();
         }
@@ -882,14 +1024,14 @@ ipcMain.on('panel-ping', () => {
 
 ipcMain.on('open-chat-with-result', (event, result) => {
     if (mainWindow) {
-        // Focus main window
-        mainWindow.show();
-        mainWindow.focus();
-        
         // Send result to chat
-        setTimeout(() => {
-            mainWindow.webContents.send('analysis-result', result);
-        }, 500);
+        mainWindow.webContents.send('analysis-result', result);
+        
+        // ONLY show/focus if user isn't actively working elsewhere 
+        // This prevents the 'forces open' feeling if they are in another app
+        // But for now, let's keep it simple: just send the data.
+        
+        console.log('[MAIN] Result sent to chat. Window state handled by user.');
         
         // Hide floating panel
         if (floatingPanel) {

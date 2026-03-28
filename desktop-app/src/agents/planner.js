@@ -28,8 +28,6 @@ Example:
 ]
 `;
 
-    // In this implementation, we'll use Ollama as the default engine
-    // We expect Ollama to be running locally with the 'llava' model
     const data = JSON.stringify({
         model: "llava",
         prompt: systemPrompt,

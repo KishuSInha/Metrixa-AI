@@ -9,7 +9,7 @@ const TEXT_DARK = '#1a1a1a';
 
 const Logo = () => (
   <div className="flex items-center gap-2.5">
-    <img src="/icon.png" alt="Metrixa" className="w-8 h-8" />
+    <img src="/logo.svg" alt="Metrixa" className="w-8 h-8" />
     <span className="text-[22px] font-bold tracking-tight text-black">Metrixa</span>
   </div>
 );
@@ -68,6 +68,34 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
+const HeroCursorAnimation = () => {
+  // Use a fixed generic path or rely on relative viewport positioning to prevent hydration mismatch/errors
+  return (
+    <motion.div
+      initial={{ x: 800, y: 100 }}
+      animate={{
+        x: [800, 400, 150, 600, 500],
+        y: [100, 50, 200, 80, 150]
+      }}
+      transition={{
+        duration: 10,
+        ease: "easeInOut",
+        repeat: Infinity,
+        repeatType: "reverse"
+      }}
+      className="absolute top-0 left-0 z-50 pointer-events-none flex flex-col items-start hidden md:flex"
+    >
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-lg drop-shadow-white/20">
+        <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.42c.45 0 .67-.54.35-.85L5.5 3.21z" fill="black" stroke="white" strokeWidth="1.5" />
+      </svg>
+      <div className="mt-2 ml-4 px-3 py-1.5 bg-black/80 backdrop-blur-xl rounded-full border border-white/20 shadow-2xl flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-[#74D4FB] animate-[pulse_1.5s_ease-in-out_infinite]" />
+        <span className="text-white text-[11px] font-semibold tracking-wider uppercase">Metrixa Executing</span>
+      </div>
+    </motion.div>
+  );
+};
+
 const Landing = () => {
   const [scrolled, setScrolled] = useState(false);
   const downloadUrl = "https://github.com/KishuSInha/Metrixa-AI/releases/download/v0.1.1/Metrixa.AI-0.1.1-arm64.dmg";
@@ -109,14 +137,25 @@ const Landing = () => {
       </nav>
 
       {/* Hero - Centered & Spacious */}
-      <header className="relative z-10 pt-72 pb-48 px-10 md:px-16 max-w-[1400px] mx-auto text-center">
+      <header className="relative z-10 pt-72 pb-48 px-10 md:px-16 max-w-[1400px] mx-auto text-center overflow-hidden">
+        <HeroCursorAnimation />
+        
         <motion.div
            initial={{ opacity: 0, y: 30 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ duration: 0.8 }}
+           className="relative"
         >
+          {/* Silicon Valley Badge */}
+          <div className="flex justify-center mb-10">
+            <div className="px-4 py-1.5 bg-[#EAEDE7] rounded-full flex items-center gap-2 border border-black/5 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-[#74D4FB] animate-pulse" />
+              <span className="text-[13px] font-bold text-black/70 tracking-tight">Metrixa Beta v0.1.1</span>
+            </div>
+          </div>
+          
           <h1 className="text-7xl md:text-[110px] font-semibold leading-[0.9] tracking-[-0.05em] mb-12">
-            Say hello  to <br /> Metrixa.
+            Say hello to <br /> Metrixa.
           </h1>
           <p className="text-2xl md:text-[34px] text-black/50 font-medium mb-16 max-w-2xl mx-auto leading-tight">
             On-device neural orchestration for the digital elite. Metrixa executes where you live—within your private hardware boundary.
@@ -195,7 +234,7 @@ const Landing = () => {
            </div>
            {/* Ghost-style floating icon */}
            <div className="absolute right-12 md:right-24 bottom-12 md:bottom-24 w-32 h-32 md:w-48 md:h-48 bg-[#101820] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
-              <img src="/icon.png" className="w-[60%] h-[60%] brightness-0 invert" alt="Metrixa" />
+              <img src="/logo.svg" className="w-[60%] h-[60%]" alt="Metrixa" />
            </div>
         </div>
       </section>
@@ -224,7 +263,7 @@ const Landing = () => {
               {/* Logo area */}
               <div className="w-full md:w-1/3">
                  <Link to="/" className="flex items-center gap-3">
-                    <img src="/icon.png" alt="Metrixa" className="w-8 h-8 brightness-0 invert" />
+                    <img src="/logo.svg" alt="Metrixa" className="w-8 h-8" />
                     <span className="text-3xl font-bold tracking-tight">Metrixa</span>
                  </Link>
               </div>

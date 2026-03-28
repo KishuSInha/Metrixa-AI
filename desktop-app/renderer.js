@@ -25,10 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     startMonitoring();
 
-    // Auto-analyze on launch (mock or real) after a short delay
-    setTimeout(() => {
-        analyzeCurrentScreen();
-    }, 2000);
+    setupEventListeners();
+    setupEventListeners();
+    startMonitoring();
 });
 
 // Load settings from store

@@ -73,6 +73,13 @@
             stroke-width: 2;
         }
 
+        /* Polar Bear specific styling */
+        .bear-ear { fill: #FFFFFF; stroke: #EAEAEA; stroke-width: 1.5; }
+        .bear-face { fill: #FFFFFF; stroke: #EAEAEA; stroke-width: 1.5; }
+        .bear-eye { fill: #111111; }
+        .bear-snout { fill: #F4F4F4; }
+        .bear-nose { fill: #111111; }
+
         .sidebar-spacer {
             flex: 1;
         }
@@ -358,7 +365,22 @@
             <!-- Dashboard View -->
             <div class="dashboard" id="dashboardView">
                 <div class="greeting-container">
-                    <span class="ghost-emoji">👻</span>
+                    <div style="width: 48px; height: 48px; margin: 0 auto 16px auto;">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Left Ear -->
+                            <circle cx="10" cy="12" r="6" class="bear-ear" />
+                            <!-- Right Ear -->
+                            <circle cx="30" cy="12" r="6" class="bear-ear" />
+                            <!-- Head -->
+                            <ellipse cx="20" cy="22" rx="16" ry="14" class="bear-face" />
+                            <!-- Eyes -->
+                            <circle cx="14" cy="20" r="2.5" class="bear-eye" />
+                            <circle cx="26" cy="20" r="2.5" class="bear-eye" />
+                            <!-- Nose (Snout) -->
+                            <ellipse cx="20" cy="26" rx="6" ry="4" class="bear-snout" />
+                            <ellipse cx="20" cy="25" rx="3" ry="2" class="bear-nose" />
+                        </svg>
+                    </div>
                     <h1 class="greeting-text">Happy Monday, Byte!</h1>
                 </div>
 
@@ -383,10 +405,10 @@
                     </div>
 
                     <div class="action-chips">
-                        <button class="chip">Let's work</button>
-                        <button class="chip">Let's learn</button>
-                        <button class="chip">Search my life</button>
-                        <button class="chip">Coach me</button>
+                        <button class="chip" data-query="Let's work">Let's work</button>
+                        <button class="chip" data-query="What are my tasks for today?">Let's learn</button>
+                        <button class="chip" data-query="Search my life">Search my life</button>
+                        <button class="chip" data-query="Summarize my day">Coach me</button>
                     </div>
                 </div>
             </div>
@@ -437,7 +459,7 @@
             chatView.scrollTop = chatView.scrollHeight;
         }
 
-        function handleSend() {
+        async function handleSend() {
             const text = chatInput.value.trim();
             if (!text) return;
 
@@ -445,13 +467,34 @@
             chatInput.value = '';
             chatInput.style.height = 'auto';
 
-            const loading = document.createElement('div');
-            loading.className = 'msg ai';
-            loading.id = 'loading';
-            loading.textContent = 'Thinking...';
-            chatView.appendChild(loading);
+            const loadingId = 'loading-' + Date.now();
+            const loadingHtml = `<div class="msg ai" id="${loadingId}">Thinking...</div>`;
+            chatView.insertAdjacentHTML('beforeend', loadingHtml);
+            
+            try {
+                // Get context
+                let ctx = null;
+                try {
+                    const ctxRes = await ipc.invoke('detect-context');
+                    if (ctxRes && ctxRes.success) ctx = ctxRes.data;
+                } catch(e) {}
 
-            ipc.send('manual-analysis', { query: text });
+                // Plan
+                document.getElementById(loadingId).innerHTML = 'Planning steps...';
+                const planResult = await ipc.invoke('create-plan', { intent: text, context: ctx });
+                if (!planResult.success) throw new Error(planResult.error);
+                
+                // Execute
+                document.getElementById(loadingId).innerHTML = 'Working on it...';
+                const execResult = await ipc.invoke('execute-plan', { plan: planResult.data, context: ctx });
+                if (!execResult.success) throw new Error(execResult.error);
+                
+                document.getElementById(loadingId).remove();
+                addMessage('ai', execResult.summary || 'Done!');
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                addMessage('ai', `<span style="color:#ff3b30">Error: ${err.message}</span>`);
+            }
         }
 
         sendBtn.addEventListener('click', handleSend);
@@ -460,6 +503,15 @@
                 e.preventDefault();
                 handleSend();
             }
+        });
+
+        // Wire chips
+        document.querySelectorAll('.chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                chatInput.value = chip.dataset.query || chip.textContent;
+                chatInput.style.height = 'auto'; // reset
+                handleSend();
+            });
         });
 
         ipc.on('analysis-result', (data) => {
